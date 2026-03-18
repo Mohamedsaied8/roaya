@@ -1,6 +1,9 @@
 #pragma once
 
+#include "../core/spsc_queue.hpp"
+#include "../signaling/message_types.hpp"
 #include "participant.hpp"
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -13,11 +16,13 @@
 namespace roaya {
 
 /**
- * Represents a meeting room with up to 50 participants
+ * @brief Represents a meeting room with up to 50 participants.
+ * Each room runs its own message loop (thread-pinned via RoomManager).
  */
 class Room {
 public:
   static constexpr int MAX_PARTICIPANTS = 50;
+  static constexpr size_t QUEUE_CAPACITY = 1024;
 
   Room(const std::string &id, const std::string &name,
        const std::string &hostId);
@@ -45,6 +50,10 @@ public:
   void setActive(bool active) { active_ = active; }
   void transferHost(const std::string &newHostId);
 
+  // Message processing (Lock-Free Entry Point)
+  bool pushMessage(const SignalingMessage &msg);
+  void processMessages();
+
   // Broadcast callback type
   using BroadcastCallback = std::function<void(const std::string &participantId,
                                                const std::string &message)>;
@@ -52,13 +61,13 @@ public:
     broadcastCallback_ = callback;
   }
 
-  // Broadcast message to all participants
+  // Messaging (Outbound)
   void broadcast(const std::string &message, const std::string &excludeId = "");
-
-  // Broadcast message to specific participant
+  void broadcast(const SignalingMessage &msg, const std::string &excludeId = "");
   void sendTo(const std::string &participantId, const std::string &message);
+  void sendTo(const std::string &participantId, const SignalingMessage &msg);
 
-  // Serialize room info
+  // Serialized room info
   nlohmann::json toJson() const;
   nlohmann::json toJsonWithParticipants() const;
 
@@ -66,19 +75,24 @@ public:
   auto getCreatedTime() const { return createdTime_; }
 
 private:
+  void handleMessage(const SignalingMessage &msg);
   std::string generateMeetingCode();
 
   std::string id_;
   std::string name_;
   std::string meetingCode_;
   std::string hostId_;
-  bool active_ = true;
+  std::atomic<bool> active_{true};
 
   std::unordered_map<std::string, std::shared_ptr<Participant>> participants_;
+  // Mutex still needed for public getters called by RoomManager/Web API, 
+  // but message processing loop will be single-threaded per room.
   mutable std::mutex mutex_;
 
-  BroadcastCallback broadcastCallback_;
+  // Lock-Free Input Queue
+  SPSCQueue<SignalingMessage> inQueue_;
 
+  BroadcastCallback broadcastCallback_;
   std::chrono::system_clock::time_point createdTime_;
 };
 

@@ -1,14 +1,33 @@
 #include "room_manager.hpp"
 #include "../core/logger.hpp"
-#include <iomanip>
 #include <random>
 #include <sstream>
+#include <thread>
+#include <vector>
 
 namespace roaya {
 
 RoomManager &RoomManager::getInstance() {
   static RoomManager instance;
   return instance;
+}
+
+void RoomManager::start() {
+  if (running_.exchange(true)) {
+    return;
+  }
+  LOG_INFO("Starting RoomManager loop");
+  roomThread_ = std::thread(&RoomManager::runRoomLoop, this);
+}
+
+void RoomManager::stop() {
+  if (!running_.exchange(false)) {
+    return;
+  }
+  LOG_INFO("Stopping RoomManager loop");
+  if (roomThread_.joinable()) {
+    roomThread_.join();
+  }
 }
 
 std::string RoomManager::generateRoomId() {
@@ -172,6 +191,29 @@ void RoomManager::cleanupInactiveRooms(int maxInactiveMinutes) {
       LOG_INFO("Cleaned up inactive room: {}", id);
     }
   }
+}
+
+void RoomManager::runRoomLoop() {
+  while (running_) {
+    // Snapshot rooms to minimize lock duration
+    std::vector<std::shared_ptr<Room>> roomSnapshot;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      roomSnapshot.reserve(rooms_.size());
+      for (auto const &[id, room] : rooms_) {
+        roomSnapshot.push_back(room);
+      }
+    }
+
+    // Process messages for each room (Single-threaded per room logic)
+    for (auto const &room : roomSnapshot) {
+      room->processMessages();
+    }
+
+    // Yield to avoid 100% CPU usage on idle
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  LOG_INFO("RoomManager loop exited");
 }
 
 } // namespace roaya

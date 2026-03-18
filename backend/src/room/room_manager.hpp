@@ -1,19 +1,27 @@
 #pragma once
 
 #include "room.hpp"
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <thread>
 #include <unordered_map>
+#include <vector>
 
 namespace roaya {
 
 /**
- * Manages all active rooms in the system
+ * @brief Manages all active rooms in the system.
+ * Orchestrates a background loop that processes messages for each room.
  */
 class RoomManager {
 public:
   static RoomManager &getInstance();
+
+  // Lifecycle
+  void start();
+  void stop();
 
   // Room lifecycle
   std::shared_ptr<Room> createRoom(const std::string &name,
@@ -39,11 +47,16 @@ public:
   void cleanupInactiveRooms(int maxInactiveMinutes = 60);
 
 private:
+  void runRoomLoop();
+
   RoomManager() = default;
   RoomManager(const RoomManager &) = delete;
   RoomManager &operator=(const RoomManager &) = delete;
 
   std::string generateRoomId();
+
+  std::atomic<bool> running_{false};
+  std::thread roomThread_;
 
   std::unordered_map<std::string, std::shared_ptr<Room>> rooms_;
   std::unordered_map<std::string, std::string> meetingCodeToRoomId_;

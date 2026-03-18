@@ -1,5 +1,6 @@
 #include "room.hpp"
 #include "../core/logger.hpp"
+#include "../signaling/message_types.hpp"
 #include <algorithm>
 #include <random>
 
@@ -8,7 +9,7 @@ namespace roaya {
 Room::Room(const std::string &id, const std::string &name,
            const std::string &hostId)
     : id_(id), name_(name), hostId_(hostId),
-      meetingCode_(generateMeetingCode()),
+      meetingCode_(generateMeetingCode()), inQueue_(QUEUE_CAPACITY),
       createdTime_(std::chrono::system_clock::now()) {
   LOG_INFO("Room created: {} ({}), host: {}", name_, id_, hostId_);
 }
@@ -123,6 +124,72 @@ void Room::transferHost(const std::string &newHostId) {
   LOG_INFO("Host transferred to {} in room {}", newHostId, id_);
 }
 
+bool Room::pushMessage(const SignalingMessage &msg) { return inQueue_.push(msg); }
+
+void Room::processMessages() {
+  SignalingMessage msg;
+  while (inQueue_.pop(msg)) {
+    handleMessage(msg);
+  }
+}
+
+void Room::handleMessage(const SignalingMessage &msg) {
+  // Signal routing logic (WebRTC + custom events)
+  switch (msg.type) {
+  case MessageType::CHAT_MESSAGE: {
+    auto participant = getParticipant(msg.senderId);
+    if (participant) {
+      SignalingMessage broadcastMsg = msg;
+      broadcastMsg.payload["senderName"] = participant->getName();
+      broadcastMsg.payload["senderId"] = msg.senderId;
+      broadcast(broadcastMsg);
+    }
+    break;
+  }
+  case MessageType::SDP_OFFER:
+  case MessageType::SDP_ANSWER:
+  case MessageType::ICE_CANDIDATE:
+    if (!msg.targetId.empty()) {
+      sendTo(msg.targetId, msg);
+    } else {
+      broadcast(msg, msg.senderId);
+    }
+    break;
+  case MessageType::MEDIA_STATE_CHANGE: {
+    auto participant = getParticipant(msg.senderId);
+    if (participant) {
+      if (msg.payload.contains("audioMuted")) {
+        participant->setAudioMuted(msg.payload["audioMuted"]);
+      }
+      if (msg.payload.contains("videoMuted")) {
+        participant->setVideoMuted(msg.payload["videoMuted"]);
+      }
+
+      SignalingMessage updateMsg;
+      updateMsg.type = MessageType::PARTICIPANT_UPDATE;
+      updateMsg.roomId = id_;
+      updateMsg.senderId = msg.senderId;
+      updateMsg.payload = participant->toJson();
+      broadcast(updateMsg);
+    }
+    break;
+  }
+  case MessageType::START_SCREEN_SHARE:
+  case MessageType::STOP_SCREEN_SHARE: {
+    auto participant = getParticipant(msg.senderId);
+    if (participant) {
+      participant->setScreenSharing(msg.type ==
+                                    MessageType::START_SCREEN_SHARE);
+      broadcast(msg, msg.senderId);
+    }
+    break;
+  }
+  default:
+    // Lifecycle messages (CREATE/JOIN/LEAVE) are handled in SignalingHandler synchronously
+    break;
+  }
+}
+
 void Room::broadcast(const std::string &message, const std::string &excludeId) {
   if (!broadcastCallback_)
     return;
@@ -135,11 +202,20 @@ void Room::broadcast(const std::string &message, const std::string &excludeId) {
   }
 }
 
+void Room::broadcast(const SignalingMessage &msg, const std::string &excludeId) {
+  broadcast(msg.toJson().dump(), excludeId);
+}
+
 void Room::sendTo(const std::string &participantId,
                   const std::string &message) {
   if (!broadcastCallback_)
     return;
   broadcastCallback_(participantId, message);
+}
+
+void Room::sendTo(const std::string &participantId,
+                  const SignalingMessage &msg) {
+  sendTo(participantId, msg.toJson().dump());
 }
 
 nlohmann::json Room::toJson() const {
@@ -149,7 +225,7 @@ nlohmann::json Room::toJson() const {
           {"hostId", hostId_},
           {"participantCount", getParticipantCount()},
           {"maxParticipants", MAX_PARTICIPANTS},
-          {"active", active_}};
+          {"active", active_.load()}};
 }
 
 nlohmann::json Room::toJsonWithParticipants() const {
@@ -166,7 +242,7 @@ nlohmann::json Room::toJsonWithParticipants() const {
           {"hostId", hostId_},
           {"participants", participantsJson},
           {"maxParticipants", MAX_PARTICIPANTS},
-          {"active", active_}};
+          {"active", active_.load()}};
 }
 
 } // namespace roaya
