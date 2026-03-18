@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/useAuthStore'
 
 export default function LoginPage() {
     const navigate = useNavigate()
-    const { setUser, setError, error, isLoading, setLoading } = useAuthStore()
+    const { login, register, setUser, error, isLoading } = useAuthStore()
 
     const [isRegister, setIsRegister] = useState(false)
     const [email, setEmail] = useState('')
@@ -14,33 +14,13 @@ export default function LoginPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setLoading(true)
-        setError(null)
 
-        try {
-            const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login'
-            const body = isRegister
-                ? { email, password, name }
-                : { email, password }
+        const success = isRegister
+            ? await register(email, password, name)
+            : await login(email, password)
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            })
-
-            const data = await response.json()
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Authentication failed')
-            }
-
-            setUser(data.user, data.token)
+        if (success) {
             navigate('/')
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Authentication failed')
-        } finally {
-            setLoading(false)
         }
     }
 
