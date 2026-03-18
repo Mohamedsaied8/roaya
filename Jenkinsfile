@@ -62,8 +62,15 @@ pipeline {
     }
 
     post {
+        success {
+            echo "Pipeline succeeded. Updating GitHub status..."
+            step([$class: 'GitHubCommitStatusSetter', statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: 'Build finished successfully', state: 'SUCCESS']]]])
+        }
+        failure {
+            echo "Pipeline failed. Updating GitHub status..."
+            step([$class: 'GitHubCommitStatusSetter', statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: 'Build failed', state: 'FAILURE']]]])
+        }
         always {
-            // Future: update GitHub Status API
             echo "Pipeline finished."
         }
     }
