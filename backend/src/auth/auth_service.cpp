@@ -1,5 +1,6 @@
 #include "auth_service.hpp"
 #include "../core/logger.hpp"
+#include "../db/user_repository.hpp"
 #include "password_hasher.hpp"
 #include <chrono>
 #include <iomanip>
@@ -26,13 +27,6 @@ std::string AuthService::generateUserId() {
 AuthResult AuthService::registerUser(const std::string &email,
                                      const std::string &password,
                                      const std::string &name) {
-  std::lock_guard<std::mutex> lock(mutex_);
-
-  // Check if email already exists
-  if (emails_.find(email) != emails_.end()) {
-    return {false, "Email already registered", std::nullopt, std::nullopt};
-  }
-
   // Validate input
   if (email.empty() || password.empty() || name.empty()) {
     return {false, "Email, password, and name are required", std::nullopt,
@@ -42,6 +36,13 @@ AuthResult AuthService::registerUser(const std::string &email,
   if (password.length() < 8) {
     return {false, "Password must be at least 8 characters", std::nullopt,
             std::nullopt};
+  }
+
+  auto &repo = UserRepository::getInstance();
+
+  // Check if email already exists
+  if (repo.findByEmail(email).has_value()) {
+    return {false, "Email already registered", std::nullopt, std::nullopt};
   }
 
   // Create user
@@ -56,14 +57,16 @@ AuthResult AuthService::registerUser(const std::string &email,
   user.lastLogin = user.createdAt;
 
   // Store user
-  users_[user.id] = user;
-  emails_[email] = user.id;
+  auto createdUser = repo.create(user);
+  if (!createdUser) {
+    return {false, "Failed to create user in database", std::nullopt, std::nullopt};
+  }
 
   // Create token
   std::string token = JwtHandler::createToken(user.id, user.email, user.name);
 
   // Clear password hash before returning
-  User safeUser = user;
+  User safeUser = *createdUser;
   safeUser.passwordHash = "";
 
   LOG_INFO("User registered: {} ({})", email, user.id);
@@ -72,20 +75,15 @@ AuthResult AuthService::registerUser(const std::string &email,
 
 AuthResult AuthService::login(const std::string &email,
                               const std::string &password) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  auto &repo = UserRepository::getInstance();
 
   // Find user by email
-  auto emailIt = emails_.find(email);
-  if (emailIt == emails_.end()) {
+  auto userOpt = repo.findByEmail(email);
+  if (!userOpt) {
     return {false, "Invalid email or password", std::nullopt, std::nullopt};
   }
 
-  auto userIt = users_.find(emailIt->second);
-  if (userIt == users_.end()) {
-    return {false, "Invalid email or password", std::nullopt, std::nullopt};
-  }
-
-  User &user = userIt->second;
+  User &user = *userOpt;
 
   // Verify password
   if (!PasswordHasher::verify(password, user.passwordHash)) {
@@ -97,6 +95,7 @@ AuthResult AuthService::login(const std::string &email,
   user.lastLogin = std::chrono::duration_cast<std::chrono::seconds>(
                        std::chrono::system_clock::now().time_since_epoch())
                        .count();
+  repo.update(user);
 
   // Create token
   std::string token = JwtHandler::createToken(user.id, user.email, user.name);
@@ -115,34 +114,31 @@ std::optional<User> AuthService::verifyToken(const std::string &token) {
     return std::nullopt;
   }
 
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto it = users_.find(payload->userId);
-  if (it == users_.end()) {
+  auto &repo = UserRepository::getInstance();
+  auto userOpt = repo.findById(payload->userId);
+  if (!userOpt) {
     return std::nullopt;
   }
 
-  User safeUser = it->second;
+  User safeUser = *userOpt;
   safeUser.passwordHash = "";
   return safeUser;
 }
 
 bool AuthService::logout(const std::string &token) {
-  // In a production system, you would add the token to a blacklist
-  // For now, we just verify it's valid
   return JwtHandler::verifyToken(token).has_value();
 }
 
 bool AuthService::changePassword(const std::string &userId,
                                  const std::string &oldPassword,
                                  const std::string &newPassword) {
-  std::lock_guard<std::mutex> lock(mutex_);
-
-  auto it = users_.find(userId);
-  if (it == users_.end()) {
+  auto &repo = UserRepository::getInstance();
+  auto userOpt = repo.findById(userId);
+  if (!userOpt) {
     return false;
   }
 
-  if (!PasswordHasher::verify(oldPassword, it->second.passwordHash)) {
+  if (!PasswordHasher::verify(oldPassword, userOpt->passwordHash)) {
     return false;
   }
 
@@ -150,7 +146,8 @@ bool AuthService::changePassword(const std::string &userId,
     return false;
   }
 
-  it->second.passwordHash = PasswordHasher::hash(newPassword);
+  userOpt->passwordHash = PasswordHasher::hash(newPassword);
+  repo.update(*userOpt);
   LOG_INFO("Password changed for user: {}", userId);
   return true;
 }
@@ -158,20 +155,20 @@ bool AuthService::changePassword(const std::string &userId,
 bool AuthService::updateProfile(const std::string &userId,
                                 const std::string &name,
                                 const std::string &avatarUrl) {
-  std::lock_guard<std::mutex> lock(mutex_);
-
-  auto it = users_.find(userId);
-  if (it == users_.end()) {
+  auto &repo = UserRepository::getInstance();
+  auto userOpt = repo.findById(userId);
+  if (!userOpt) {
     return false;
   }
 
   if (!name.empty()) {
-    it->second.name = name;
+    userOpt->name = name;
   }
   if (!avatarUrl.empty()) {
-    it->second.avatarUrl = avatarUrl;
+    userOpt->avatarUrl = avatarUrl;
   }
 
+  repo.update(*userOpt);
   LOG_INFO("Profile updated for user: {}", userId);
   return true;
 }

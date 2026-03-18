@@ -60,11 +60,6 @@ public:
 private:
   AuthService() = default;
 
-  // In-memory user storage (replace with database in production)
-  std::unordered_map<std::string, User> users_;         // id -> user
-  std::unordered_map<std::string, std::string> emails_; // email -> id
-  std::mutex mutex_;
-
   std::string generateUserId();
 };
 
