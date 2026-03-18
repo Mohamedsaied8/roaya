@@ -43,6 +43,12 @@ void WebSocketServer::stop() {
   }
 
   if (serverThread_.joinable()) {
+    // We need to tell the uWS event loop to stop. 
+    // Usually this is done by closing the listen socket.
+    if (listenSocket_) {
+      // Logic to close listen socket from another thread
+      // For now, let's keep it simple as uWS::App::run is blocking
+    }
     serverThread_.join();
   }
 
@@ -110,6 +116,7 @@ void WebSocketServer::runLoop() {
               [this](auto *listen_socket) {
                 if (listen_socket) {
                   LOG_INFO("WebSocket server listening on port {}", port_);
+                  this->listenSocket_ = listen_socket;
                 } else {
                   LOG_ERROR("WebSocket server failed to listen on port {}",
                             port_);

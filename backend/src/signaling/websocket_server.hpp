@@ -69,6 +69,7 @@ private:
   uint16_t port_;
   std::atomic<bool> running_{false};
   std::thread serverThread_;
+  void *listenSocket_ = nullptr; // struct us_listen_socket_t *
 
   std::unordered_map<std::string, std::shared_ptr<WebSocketConnection>>
       connections_;

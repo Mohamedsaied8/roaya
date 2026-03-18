@@ -56,11 +56,9 @@ bool Server::initialize(const std::string &configPath) {
   // Setup signal handlers
   setupSignalHandlers();
 
-  // Initialize database connection pool
-  // UserRepository is an in-memory singleton for now, so no explicit init is
-  // needed here
+  // Initialize database connection
   UserRepository::getInstance();
-  LOG_INFO("Database connection pool initialized");
+  LOG_INFO("Database (PostgreSQL) repository initialized");
 
   // Initialize Redis client
   if (!RedisClient::getInstance().connect(config.getRedisHost(),
@@ -88,6 +86,9 @@ void Server::run() {
     LOG_INFO("Server starting...");
 
     Executor executor;
+
+    // Start RoomManager processing loop
+    RoomManager::getInstance().start();
 
     // Start WebSocket server thread
     executor.execute([this]() { startWebSocketServer(); });
@@ -123,6 +124,9 @@ void Server::shutdown() {
       wsServer_->stop();
     if (httpServer_)
       httpServer_->stop();
+    
+    // Stop RoomManager loop
+    RoomManager::getInstance().stop();
     // if (sfuServer_) sfuServer_->stop(); // TODO: Uncomment when SFU is
     // implemented
 
