@@ -30,6 +30,10 @@ private:
                       const SignalingMessage &msg);
   void handleLeaveRoom(std::shared_ptr<WebSocketConnection> conn,
                        const SignalingMessage &msg);
+  void handleKickParticipant(std::shared_ptr<WebSocketConnection> conn,
+                             const SignalingMessage &msg);
+  void handleEndMeeting(std::shared_ptr<WebSocketConnection> conn,
+                        const SignalingMessage &msg);
 
   // Utility
   void sendError(std::shared_ptr<WebSocketConnection> conn,

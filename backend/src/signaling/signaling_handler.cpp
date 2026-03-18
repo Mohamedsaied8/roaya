@@ -32,6 +32,12 @@ void SignalingHandler::handleMessage(std::shared_ptr<WebSocketConnection> conn,
     case MessageType::LEAVE_ROOM:
       handleLeaveRoom(conn, msg);
       break;
+    case MessageType::KICK_PARTICIPANT:
+      handleKickParticipant(conn, msg);
+      break;
+    case MessageType::END_MEETING:
+      handleEndMeeting(conn, msg);
+      break;
     case MessageType::PING: {
       SignalingMessage pong;
       pong.type = MessageType::PONG;
@@ -234,6 +240,71 @@ void SignalingHandler::handleLeaveRoom(
   }
 
   LOG_INFO("Participant {} left room {}", participantId, roomId);
+}
+
+void SignalingHandler::handleKickParticipant(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  if (conn->roomId.empty() || conn->participantId.empty())
+    return;
+
+  auto room = RoomManager::getInstance().getRoom(conn->roomId);
+  if (!room || room->getHostId() != conn->participantId) {
+    sendError(conn, "Only host can kick participants");
+    return;
+  }
+
+  std::string targetId = msg.payload.value("participantId", "");
+  if (targetId.empty()) {
+    sendError(conn, "Missing participantId to kick");
+    return;
+  }
+
+  // Notify the kicked participant
+  SignalingMessage kickMsg;
+  kickMsg.type = MessageType::KICK_PARTICIPANT;
+  kickMsg.roomId = conn->roomId;
+  kickMsg.payload = {{"reason", "Kicked by host"}};
+  if (wsServer_) {
+    wsServer_->sendToParticipant(targetId, kickMsg.toString());
+  }
+
+  // Remove from room
+  RoomManager::getInstance().leaveRoom(conn->roomId, targetId);
+
+  // Notify others
+  SignalingMessage update;
+  update.type = MessageType::PARTICIPANT_LEFT;
+  update.roomId = conn->roomId;
+  update.payload = {{"participantId", targetId}};
+  broadcastToRoom(conn->roomId, update);
+
+  LOG_INFO("Participant {} kicked from room {} by host", targetId,
+           conn->roomId);
+}
+
+void SignalingHandler::handleEndMeeting(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  if (conn->roomId.empty() || conn->participantId.empty())
+    return;
+
+  auto room = RoomManager::getInstance().getRoom(conn->roomId);
+  if (!room || room->getHostId() != conn->participantId) {
+    sendError(conn, "Only host can end meeting");
+    return;
+  }
+
+  std::string roomId = conn->roomId;
+
+  // Notify all participants
+  SignalingMessage endMsg;
+  endMsg.type = MessageType::END_MEETING;
+  endMsg.roomId = roomId;
+  broadcastToRoom(roomId, endMsg);
+
+  // Delete room
+  RoomManager::getInstance().deleteRoom(roomId);
+
+  LOG_INFO("Meeting ended in room {} by host", roomId);
 }
 
 
