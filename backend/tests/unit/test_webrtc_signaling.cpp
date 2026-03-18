@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 
-using namespace zoom;
+using namespace roaya;
 
 class WebRTCSignalingTest : public ::testing::Test {
 protected:

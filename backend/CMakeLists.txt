@@ -8,6 +8,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Build options
 option(BUILD_TESTS "Build unit and integration tests" ON)
 option(BUILD_DOCS "Build documentation" OFF)
+option(USE_ASAN "Use AddressSanitizer" OFF)
+option(USE_TSAN "Use ThreadSanitizer" OFF)
+
+if(USE_ASAN)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address)
+elseif(USE_TSAN)
+    add_compile_options(-fsanitize=thread)
+    add_link_options(-fsanitize=thread)
+endif()
 
 # Output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -74,6 +84,22 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(httplib)
 
+# argon2 - password hashing
+FetchContent_Declare(
+    argon2
+    GIT_REPOSITORY https://github.com/P-H-C/phc-winner-argon2.git
+    GIT_TAG 20190702
+)
+FetchContent_MakeAvailable(argon2)
+
+# libpqxx - PostgreSQL C++ client
+FetchContent_Declare(
+    libpqxx
+    GIT_REPOSITORY https://github.com/jtv/libpqxx.git
+    GIT_TAG 7.9.1
+)
+FetchContent_MakeAvailable(libpqxx)
+
 file(GLOB USOCKETS_SOURCES
     ${usockets_SOURCE_DIR}/src/*.c
     ${usockets_SOURCE_DIR}/src/eventing/*.c
@@ -94,6 +120,8 @@ set(CORE_SOURCES
     src/core/server.cpp
     src/core/config.cpp
     src/core/logger.cpp
+    src/core/worker_thread.cpp
+    src/core/signal_handler.cpp
 )
 
 set(SIGNALING_SOURCES
@@ -124,6 +152,7 @@ set(CHAT_SOURCES
 set(DATABASE_SOURCES
     src/db/user_repository.cpp
     src/db/redis_client.cpp
+    src/db/postgres_client.cpp
 )
 
 set(ALL_SOURCES
@@ -159,6 +188,8 @@ target_link_libraries(roaya_lib PUBLIC
     jwt-cpp::jwt-cpp
     usockets
     ZLIB::ZLIB
+    pqxx::pqxx
+    argon2
 )
 
 
@@ -168,7 +199,7 @@ target_link_libraries(roaya_lib PUBLIC
 # =====================
 
 add_executable(roaya_server src/main.cpp)
-target_link_libraries(zoom_server PRIVATE roaya_lib)
+target_link_libraries(roaya_server PRIVATE roaya_lib)
 
 # =====================
 # Tests
@@ -192,17 +223,24 @@ if(BUILD_TESTS)
         tests/unit/test_join_room.cpp
         tests/unit/test_webrtc_signaling.cpp
         tests/unit/test_room_controls.cpp
+        tests/unit/test_concurrency.cpp
+        tests/unit/test_task_queue.cpp
+        tests/unit/test_worker_thread.cpp
     )
     target_link_libraries(unit_tests PRIVATE roaya_lib GTest::gtest_main GTest::gmock GTest::gmock_main)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
+
+    add_executable(test_auth_db tests/integration/test_auth_db.cpp)
+    target_link_libraries(test_auth_db PRIVATE roaya_lib GTest::gtest_main)
+    gtest_discover_tests(test_auth_db)
 endif()
 
 # =====================
 # Installation
 # =====================
 
-install(TARGETS zoom_server
+install(TARGETS roaya_server
     RUNTIME DESTINATION bin
 )
 
@@ -214,7 +252,7 @@ install(DIRECTORY include/roaya
 # Package Configuration
 # =====================
 
-set(CPACK_PACKAGE_NAME "ZoomLikeApp")
+set(CPACK_PACKAGE_NAME "RoayaApp")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_DESCRIPTION "High-performance video conferencing server")
 include(CPack)

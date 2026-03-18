@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
-using namespace zoom;
+using namespace roaya;
 
 class CreateRoomTest : public ::testing::Test {
 protected:
