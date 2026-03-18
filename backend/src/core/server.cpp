@@ -2,6 +2,7 @@
 #include "../api/http_server.hpp"
 #include "../db/redis_client.hpp"
 #include "../db/user_repository.hpp"
+#include "../room/room_manager.hpp"
 #include "../signaling/signaling_handler.hpp"
 #include "config.hpp"
 #include "logger.hpp"

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(ZoomLikeApp VERSION 1.0.0 LANGUAGES CXX C)
+project(Roaya VERSION 1.0.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,6 +10,8 @@ option(BUILD_TESTS "Build unit and integration tests" ON)
 option(BUILD_DOCS "Build documentation" OFF)
 option(USE_ASAN "Use AddressSanitizer" OFF)
 option(USE_TSAN "Use ThreadSanitizer" OFF)
+
+find_package(PostgreSQL REQUIRED)
 
 if(USE_ASAN)
     add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
@@ -100,6 +102,21 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(libpqxx)
 
+# Manual argon2 target
+set(ARGON2_SOURCES
+    ${argon2_SOURCE_DIR}/src/argon2.c
+    ${argon2_SOURCE_DIR}/src/core.c
+    ${argon2_SOURCE_DIR}/src/blake2/blake2b.c
+    ${argon2_SOURCE_DIR}/src/thread.c
+    ${argon2_SOURCE_DIR}/src/encoding.c
+    ${argon2_SOURCE_DIR}/src/ref.c
+)
+add_library(argon2 STATIC ${ARGON2_SOURCES})
+target_include_directories(argon2 PUBLIC 
+    ${argon2_SOURCE_DIR}/include
+    ${argon2_SOURCE_DIR}/src
+)
+
 file(GLOB USOCKETS_SOURCES
     ${usockets_SOURCE_DIR}/src/*.c
     ${usockets_SOURCE_DIR}/src/eventing/*.c
@@ -177,6 +194,7 @@ target_include_directories(roaya_lib PUBLIC
     ${uwebsockets_SOURCE_DIR}/src
     ${usockets_SOURCE_DIR}/src
     ${httplib_SOURCE_DIR}
+    ${argon2_SOURCE_DIR}/include
 )
 
 target_link_libraries(roaya_lib PUBLIC
@@ -188,7 +206,7 @@ target_link_libraries(roaya_lib PUBLIC
     jwt-cpp::jwt-cpp
     usockets
     ZLIB::ZLIB
-    pqxx::pqxx
+    pqxx
     argon2
 )
 
