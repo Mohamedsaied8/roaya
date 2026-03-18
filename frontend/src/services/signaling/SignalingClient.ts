@@ -125,16 +125,16 @@ export class SignalingClient {
     private handleMessage(data: string): void {
         try {
             const message: SignalingMessage = JSON.parse(data)
+            console.debug('Received message:', message.type, message)
+            
             const handlers = this.messageHandlers.get(message.type)
 
             if (handlers) {
                 handlers.forEach((handler) => handler(message))
             }
 
-            // Also call wildcard handlers if any
-            const wildcardHandlers = this.messageHandlers.get('error' as MessageType)
-            if (message.type === 'error' && wildcardHandlers) {
-                wildcardHandlers.forEach((handler) => handler(message))
+            if (message.type === 'error') {
+                console.error('Signaling error:', message.payload.error)
             }
         } catch (error) {
             console.error('Failed to parse message:', error)

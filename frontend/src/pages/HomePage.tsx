@@ -7,15 +7,20 @@ import { signalingClient } from '../services/signaling/SignalingClient'
 
 export default function HomePage() {
     const navigate = useNavigate()
-    const { isAuthenticated, user } = useAuthStore()
+    const { isAuthenticated, user, logout } = useAuthStore()
     const { setRoom, setLocalParticipant } = useRoomStore()
     const [meetingCode, setMeetingCode] = useState('')
     const [roomName, setRoomName] = useState('')
-    const [userName, setUserName] = useState('')
+    const [userName, setUserName] = useState(user?.name || '')
     const [isCreating, setIsCreating] = useState(false)
     const [isJoining, setIsJoining] = useState(false)
     const [showJoinModal, setShowJoinModal] = useState(false)
     const [showCreateModal, setShowCreateModal] = useState(false)
+
+    // Update userName when user changes (e.g. after login)
+    useState(() => {
+        if (user?.name) setUserName(user.name);
+    });
 
     const handleCreateRoom = async () => {
         if (!roomName.trim() || !userName.trim()) return
@@ -100,6 +105,13 @@ export default function HomePage() {
                         <span style={{ color: 'var(--color-text-secondary)' }}>
                             Welcome, {user?.name}
                         </span>
+                        <button
+                            className="btn btn-ghost"
+                            onClick={() => logout()}
+                            style={{ padding: '4px 8px' }}
+                        >
+                            Logout
+                        </button>
                     </div>
                 ) : (
                     <button
