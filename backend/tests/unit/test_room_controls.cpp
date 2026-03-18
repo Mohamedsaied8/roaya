@@ -198,7 +198,14 @@ TEST_F(RoomControlsTest, EndMeetingDeletesRoomAndNotifies) {
   auto guestResp = nlohmann::json::parse(guestMessages.front());
   EXPECT_EQ(guestResp["type"], "end_meeting");
 
-  // Room is deleted
-  auto room = RoomManager::getInstance().getRoom(roomId);
+  // Room is deleted (wait for processing)
+  int attempts = 0;
+  std::shared_ptr<Room> room;
+  while (attempts < 50) {
+    room = RoomManager::getInstance().getRoom(roomId);
+    if (!room) break;
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    attempts++;
+  }
   EXPECT_EQ(room, nullptr);
 }

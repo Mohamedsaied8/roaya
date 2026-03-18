@@ -64,23 +64,23 @@ To ensure high quality and prevent regression, a feature is considered "Done" on
 
 ---
 
-## Phase 3: Signaling & Room Management
+## Phase 3: Signaling & Room Management [DONE]
 *Goal: Real-time orchestration and meeting lifecycle.*
 
 ### 3.1 WebSocket Core & Lock-Free Signaling
-- [ ] Implement `WebSocketServer` and `SignalMessage` JSON envelope.
-- [ ] Implement **Lock-Free SPSC Queues** for IO-to-Room communication.
-- [ ] **Test**: Load test the WebSocket server for 1000+ concurrent connections.
+- [x] Implement `WebSocketServer` and `SignalingMessage` JSON envelope.
+- [x] Implement **Lock-Free SPSC Queues** for IO-to-Room communication.
+- [x] **Test**: Load test the WebSocket server for 1000+ concurrent connections.
 
 ### 3.2 Room Logic, Lifecycle & RBAC
-- [ ] Implement `RoomManager` with **Thread Pinning** and **Auth Enforcement**.
-- [ ] Implement Host Controls (Mute/Kick/Permissions) with backend validation.
-- [ ] **Test**: Scenario-based tests for Host actions (e.g., "Non-host cannot kick").
+- [x] Implement `RoomManager` with **Thread Pinning** and **Auth Enforcement**.
+- [x] Implement Host Controls (Mute/Kick/Permissions) with backend validation.
+- [x] **Test**: Scenario-based tests for Host actions (e.g., "Non-host cannot kick").
 
 ### 3.3 Roaya Branding & Participant UI
-- [ ] Design and implement the **Roaya Logo** (Vision-themed, clean typography) for the header.
-- [ ] Build **Icon-Only Participant Menu** (🔇, ⛔, 🖥️).
-- [ ] **Test**: UI/UX tests for logo responsiveness and permission toggles.
+- [x] Design and implement the **Roaya Logo** (Vision-themed, clean typography) for the header.
+- [x] Build **Icon-Only Participant Menu** (🔇, ⛔, 🖥️).
+- [x] **Test**: UI/UX tests for logo responsiveness and permission toggles.
 
 ---
 
