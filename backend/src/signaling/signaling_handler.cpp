@@ -1,0 +1,476 @@
+#include "signaling_handler.hpp"
+#include "../core/logger.hpp"
+#include "../room/participant.hpp"
+#include "../room/room.hpp"
+#include "../room/room_manager.hpp"
+#include <chrono>
+#include <nlohmann/json.hpp>
+
+namespace zoom {
+
+SignalingHandler &SignalingHandler::getInstance() {
+  static SignalingHandler instance;
+  return instance;
+}
+
+void SignalingHandler::handleMessage(std::shared_ptr<WebSocketConnection> conn,
+                                     const std::string &rawMessage) {
+  try {
+    auto json = nlohmann::json::parse(rawMessage);
+    SignalingMessage msg = SignalingMessage::fromJson(json);
+
+    LOG_DEBUG("Received message type: {} from {}",
+              messageTypeToString(msg.type), conn->id);
+
+    switch (msg.type) {
+    case MessageType::CREATE_ROOM:
+      handleCreateRoom(conn, msg);
+      break;
+    case MessageType::JOIN_ROOM:
+      handleJoinRoom(conn, msg);
+      break;
+    case MessageType::LEAVE_ROOM:
+      handleLeaveRoom(conn, msg);
+      break;
+    case MessageType::SDP_OFFER:
+      handleSdpOffer(conn, msg);
+      break;
+    case MessageType::SDP_ANSWER:
+      handleSdpAnswer(conn, msg);
+      break;
+    case MessageType::ICE_CANDIDATE:
+      handleIceCandidate(conn, msg);
+      break;
+    case MessageType::MEDIA_STATE_CHANGE:
+      handleMediaStateChange(conn, msg);
+      break;
+    case MessageType::START_SCREEN_SHARE:
+    case MessageType::STOP_SCREEN_SHARE:
+      handleScreenShare(conn, msg);
+      break;
+    case MessageType::CHAT_MESSAGE:
+      handleChatMessage(conn, msg);
+      break;
+    case MessageType::KICK_PARTICIPANT:
+      handleKickParticipant(conn, msg);
+      break;
+    case MessageType::MUTE_ALL:
+      handleMuteAll(conn, msg);
+      break;
+    case MessageType::END_MEETING:
+      handleEndMeeting(conn, msg);
+      break;
+    case MessageType::PING: {
+      SignalingMessage pong;
+      pong.type = MessageType::PONG;
+      pong.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+      conn->sendCallback(pong.toString());
+    } break;
+    default:
+      sendError(conn, "Unknown message type");
+      break;
+    }
+  } catch (const nlohmann::json::exception &e) {
+    LOG_ERROR("Failed to parse message: {}", e.what());
+    sendError(conn, "Invalid JSON format");
+  }
+}
+
+void SignalingHandler::handleCreateRoom(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  std::string roomName = msg.payload.value("name", "Untitled Meeting");
+  std::string hostName = msg.payload.value("hostName", "Host");
+
+  // Create participant for host
+  auto participantId = conn->id + "_p";
+  auto participant = std::make_shared<Participant>(participantId, hostName);
+  participant->setRole(Participant::Role::HOST);
+  participant->setConnectionId(conn->id);
+
+  // Create room
+  auto room = RoomManager::getInstance().createRoom(roomName, participantId);
+  if (!room) {
+    sendError(conn, "Failed to create room");
+    return;
+  }
+
+  // Add host to room
+  if (!RoomManager::getInstance().joinRoom(room->getId(), participant)) {
+    sendError(conn, "Failed to join room as host");
+    return;
+  }
+
+  // Update connection state
+  conn->participantId = participantId;
+  conn->roomId = room->getId();
+  if (wsServer_) {
+    wsServer_->registerParticipantMapping(participantId, conn->id);
+  }
+
+  // Send success response
+  SignalingMessage response;
+  response.type = MessageType::ROOM_CREATED;
+  response.roomId = room->getId();
+  response.senderId = participantId;
+  response.payload = room->toJsonWithParticipants();
+  response.payload["meetingCode"] = room->getMeetingCode();
+  response.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
+  conn->sendCallback(response.toString());
+
+  LOG_INFO("Room created: {} by {}", room->getId(), hostName);
+}
+
+void SignalingHandler::handleJoinRoom(std::shared_ptr<WebSocketConnection> conn,
+                                      const SignalingMessage &msg) {
+  std::string roomId = msg.roomId;
+  std::string meetingCode = msg.payload.value("meetingCode", "");
+  std::string participantName = msg.payload.value("name", "Participant");
+
+  // Find room by ID or meeting code
+  std::shared_ptr<Room> room;
+  if (!roomId.empty()) {
+    room = RoomManager::getInstance().getRoom(roomId);
+  } else if (!meetingCode.empty()) {
+    room = RoomManager::getInstance().getRoomByCode(meetingCode);
+  }
+
+  if (!room) {
+    sendError(conn, "Room not found");
+    return;
+  }
+
+  if (room->isFull()) {
+    sendError(conn, "Room is full (50 participants max)");
+    return;
+  }
+
+  // Create participant
+  auto participantId = conn->id + "_p";
+  auto participant =
+      std::make_shared<Participant>(participantId, participantName);
+  participant->setConnectionId(conn->id);
+
+  if (!RoomManager::getInstance().joinRoom(room->getId(), participant)) {
+    sendError(conn, "Failed to join room");
+    return;
+  }
+
+  // Update connection state
+  conn->participantId = participantId;
+  conn->roomId = room->getId();
+  if (wsServer_) {
+    wsServer_->registerParticipantMapping(participantId, conn->id);
+  }
+
+  // Send join success to new participant
+  SignalingMessage response;
+  response.type = MessageType::ROOM_JOINED;
+  response.roomId = room->getId();
+  response.senderId = participantId;
+  response.payload = room->toJsonWithParticipants();
+  response.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
+  conn->sendCallback(response.toString());
+
+  // Broadcast to other participants
+  SignalingMessage broadcast;
+  broadcast.type = MessageType::PARTICIPANT_JOINED;
+  broadcast.roomId = room->getId();
+  broadcast.senderId = participantId;
+  broadcast.payload = participant->toJson();
+  broadcast.timestamp = response.timestamp;
+
+  broadcastToRoom(room->getId(), broadcast, participantId);
+
+  LOG_INFO("Participant {} joined room {}", participantName, room->getId());
+}
+
+void SignalingHandler::handleLeaveRoom(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  if (conn->roomId.empty() || conn->participantId.empty()) {
+    return;
+  }
+
+  auto room = RoomManager::getInstance().getRoom(conn->roomId);
+  std::string roomId = conn->roomId;
+  std::string participantId = conn->participantId;
+
+  // Leave room
+  RoomManager::getInstance().leaveRoom(roomId, participantId);
+
+  // Clear connection state
+  conn->roomId = "";
+  conn->participantId = "";
+
+  // Send confirmation
+  SignalingMessage response;
+  response.type = MessageType::ROOM_LEFT;
+  response.roomId = roomId;
+  response.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
+  conn->sendCallback(response.toString());
+
+  // Broadcast to others if room still exists
+  if (room && room->getParticipantCount() > 0) {
+    SignalingMessage broadcast;
+    broadcast.type = MessageType::PARTICIPANT_LEFT;
+    broadcast.roomId = roomId;
+    broadcast.senderId = participantId;
+    broadcast.payload = {{"participantId", participantId}};
+    broadcast.timestamp = response.timestamp;
+
+    broadcastToRoom(roomId, broadcast);
+  }
+
+  LOG_INFO("Participant {} left room {}", participantId, roomId);
+}
+
+void SignalingHandler::handleSdpOffer(std::shared_ptr<WebSocketConnection> conn,
+                                      const SignalingMessage &msg) {
+  // Forward SDP offer to target participant or SFU
+  if (!msg.targetId.empty() && wsServer_) {
+    wsServer_->sendToParticipant(msg.targetId, msg.toString());
+  } else {
+    // Broadcast to all in room for mesh topology or forward to SFU
+    broadcastToRoom(conn->roomId, msg, conn->participantId);
+  }
+}
+
+void SignalingHandler::handleSdpAnswer(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  // Forward SDP answer to target participant
+  if (!msg.targetId.empty() && wsServer_) {
+    wsServer_->sendToParticipant(msg.targetId, msg.toString());
+  }
+}
+
+void SignalingHandler::handleIceCandidate(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  // Forward ICE candidate to target participant
+  if (!msg.targetId.empty() && wsServer_) {
+    wsServer_->sendToParticipant(msg.targetId, msg.toString());
+  } else {
+    broadcastToRoom(conn->roomId, msg, conn->participantId);
+  }
+}
+
+void SignalingHandler::handleMediaStateChange(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  auto room = RoomManager::getInstance().getRoom(conn->roomId);
+  if (!room)
+    return;
+
+  auto participant = room->getParticipant(conn->participantId);
+  if (!participant)
+    return;
+
+  // Update participant state
+  if (msg.payload.contains("audioMuted")) {
+    participant->setAudioMuted(msg.payload["audioMuted"]);
+  }
+  if (msg.payload.contains("videoMuted")) {
+    participant->setVideoMuted(msg.payload["videoMuted"]);
+  }
+
+  // Broadcast state change
+  SignalingMessage broadcast;
+  broadcast.type = MessageType::PARTICIPANT_UPDATE;
+  broadcast.roomId = conn->roomId;
+  broadcast.senderId = conn->participantId;
+  broadcast.payload = participant->toJson();
+  broadcast.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch())
+                            .count();
+
+  broadcastToRoom(conn->roomId, broadcast);
+}
+
+void SignalingHandler::handleScreenShare(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  auto room = RoomManager::getInstance().getRoom(conn->roomId);
+  if (!room)
+    return;
+
+  auto participant = room->getParticipant(conn->participantId);
+  if (!participant)
+    return;
+
+  bool isStarting = msg.type == MessageType::START_SCREEN_SHARE;
+  participant->setScreenSharing(isStarting);
+
+  // Broadcast screen share state
+  SignalingMessage broadcast;
+  broadcast.type = isStarting ? MessageType::START_SCREEN_SHARE
+                              : MessageType::STOP_SCREEN_SHARE;
+  broadcast.roomId = conn->roomId;
+  broadcast.senderId = conn->participantId;
+  broadcast.payload = {{"participantId", conn->participantId}};
+  broadcast.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch())
+                            .count();
+
+  broadcastToRoom(conn->roomId, broadcast, conn->participantId);
+
+  LOG_INFO("Screen share {} by {} in room {}",
+           isStarting ? "started" : "stopped", conn->participantId,
+           conn->roomId);
+}
+
+void SignalingHandler::handleChatMessage(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  auto room = RoomManager::getInstance().getRoom(conn->roomId);
+  if (!room)
+    return;
+
+  auto participant = room->getParticipant(conn->participantId);
+  if (!participant)
+    return;
+
+  // Create chat message
+  SignalingMessage broadcast;
+  broadcast.type = MessageType::CHAT_MESSAGE;
+  broadcast.roomId = conn->roomId;
+  broadcast.senderId = conn->participantId;
+  broadcast.payload = {{"message", msg.payload.value("message", "")},
+                       {"senderName", participant->getName()},
+                       {"senderId", conn->participantId}};
+  broadcast.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch())
+                            .count();
+
+  // Broadcast to all in room (including sender for confirmation)
+  broadcastToRoom(conn->roomId, broadcast);
+}
+
+void SignalingHandler::handleKickParticipant(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  auto room = RoomManager::getInstance().getRoom(conn->roomId);
+  if (!room || !room->isHost(conn->participantId)) {
+    sendError(conn, "Only host can kick participants");
+    return;
+  }
+
+  std::string targetId = msg.payload.value("participantId", "");
+  if (targetId.empty() || targetId == conn->participantId) {
+    return;
+  }
+
+  // Notify kicked participant
+  SignalingMessage kickMsg;
+  kickMsg.type = MessageType::KICK_PARTICIPANT;
+  kickMsg.roomId = conn->roomId;
+  kickMsg.payload = {
+      {"reason", msg.payload.value("reason", "Removed by host")}};
+  kickMsg.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          std::chrono::system_clock::now().time_since_epoch())
+                          .count();
+
+  if (wsServer_) {
+    wsServer_->sendToParticipant(targetId, kickMsg.toString());
+  }
+
+  // Remove from room
+  RoomManager::getInstance().leaveRoom(conn->roomId, targetId);
+
+  // Broadcast participant left
+  SignalingMessage broadcast;
+  broadcast.type = MessageType::PARTICIPANT_LEFT;
+  broadcast.roomId = conn->roomId;
+  broadcast.senderId = targetId;
+  broadcast.payload = {{"participantId", targetId}, {"kicked", true}};
+  broadcast.timestamp = kickMsg.timestamp;
+
+  broadcastToRoom(conn->roomId, broadcast);
+
+  LOG_INFO("Participant {} kicked from room {} by host", targetId,
+           conn->roomId);
+}
+
+void SignalingHandler::handleMuteAll(std::shared_ptr<WebSocketConnection> conn,
+                                     const SignalingMessage &msg) {
+  auto room = RoomManager::getInstance().getRoom(conn->roomId);
+  if (!room || !room->isHost(conn->participantId)) {
+    sendError(conn, "Only host can mute all");
+    return;
+  }
+
+  // Mute all participants
+  for (auto &participant : room->getParticipants()) {
+    if (participant->getId() != conn->participantId) {
+      participant->setAudioMuted(true);
+    }
+  }
+
+  // Broadcast mute all
+  SignalingMessage broadcast;
+  broadcast.type = MessageType::MUTE_ALL;
+  broadcast.roomId = conn->roomId;
+  broadcast.senderId = conn->participantId;
+  broadcast.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch())
+                            .count();
+
+  broadcastToRoom(conn->roomId, broadcast);
+
+  LOG_INFO("Mute all in room {} by host", conn->roomId);
+}
+
+void SignalingHandler::handleEndMeeting(
+    std::shared_ptr<WebSocketConnection> conn, const SignalingMessage &msg) {
+  auto room = RoomManager::getInstance().getRoom(conn->roomId);
+  if (!room || !room->isHost(conn->participantId)) {
+    sendError(conn, "Only host can end meeting");
+    return;
+  }
+
+  // Broadcast meeting end to all
+  SignalingMessage broadcast;
+  broadcast.type = MessageType::END_MEETING;
+  broadcast.roomId = conn->roomId;
+  broadcast.senderId = conn->participantId;
+  broadcast.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::system_clock::now().time_since_epoch())
+                            .count();
+
+  broadcastToRoom(conn->roomId, broadcast);
+
+  // Delete room
+  RoomManager::getInstance().deleteRoom(conn->roomId);
+
+  LOG_INFO("Meeting ended in room {} by host", conn->roomId);
+}
+
+void SignalingHandler::sendError(std::shared_ptr<WebSocketConnection> conn,
+                                 const std::string &error) {
+  SignalingMessage msg;
+  msg.type = MessageType::ERROR;
+  msg.payload = {{"error", error}};
+  msg.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::system_clock::now().time_since_epoch())
+                      .count();
+
+  if (conn->sendCallback) {
+    conn->sendCallback(msg.toString());
+  }
+
+  LOG_WARN("Error sent to {}: {}", conn->id, error);
+}
+
+void SignalingHandler::broadcastToRoom(const std::string &roomId,
+                                       const SignalingMessage &msg,
+                                       const std::string &excludeId) {
+  if (wsServer_) {
+    wsServer_->broadcastToRoom(roomId, msg.toString(), excludeId);
+  }
+}
+
+} // namespace zoom

@@ -1,0 +1,36 @@
+{
+    "server": {
+        "host": "0.0.0.0",
+        "port": 8080,
+        "websocket_port": 8081,
+        "media_port": 10000
+    },
+    "database": {
+        "host": "localhost",
+        "port": 5432,
+        "name": "zoom_app",
+        "user": "postgres",
+        "password": ""
+    },
+    "redis": {
+        "host": "localhost",
+        "port": 6379
+    },
+    "jwt": {
+        "secret": "your-super-secret-key-change-in-production",
+        "expiry_hours": 24
+    },
+    "media": {
+        "max_participants_per_room": 50,
+        "max_rooms": 100
+    },
+    "ssl": {
+        "enabled": false,
+        "cert_path": "/etc/ssl/certs/zoom_app.crt",
+        "key_path": "/etc/ssl/private/zoom_app.key"
+    },
+    "logging": {
+        "level": "info",
+        "file": "logs/zoom_app.log"
+    }
+}
