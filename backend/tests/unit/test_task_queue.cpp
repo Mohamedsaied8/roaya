@@ -36,7 +36,10 @@ TEST(TaskQueueTest, ThreadSafety) {
     std::thread consumer([&queue, num_tasks, &counter]() {
         for (int i = 0; i < num_tasks; ++i) {
             auto task = queue.pop();
-            counter++;
+            if (task) { // Ensure task is valid before calling it
+                // task(); // No need to call dummy task
+                counter++;
+            }
         }
     });
     
@@ -49,10 +52,13 @@ TEST(TaskQueueTest, ThreadSafety) {
 TEST(TaskQueueTest, StopAndEmpty) {
     TaskQueue queue;
     queue.push([]() {});
+    
+    auto task1 = queue.pop();
+    EXPECT_TRUE(task1);
+    
     queue.stop();
     
-    // pop should return nullopt or empty function after stop if empty
-    // My implementation returns empty function
-    auto task = queue.pop();
-    EXPECT_FALSE(task);
+    // pop should return null after stop if empty
+    auto task2 = queue.pop();
+    EXPECT_FALSE(task2);
 }

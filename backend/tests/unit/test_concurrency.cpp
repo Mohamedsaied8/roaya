@@ -65,6 +65,7 @@ TEST_F(ConcurrencyTest, WorkerThreadProcessesTasks) {
 
   EXPECT_EQ(counter.load(), numTasks);
   
+  queue.stop();
   worker.stop();
   EXPECT_FALSE(worker.isRunning());
 }
