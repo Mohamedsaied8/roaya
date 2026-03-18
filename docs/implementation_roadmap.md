@@ -13,54 +13,54 @@ To ensure high quality and prevent regression, a feature is considered "Done" on
 
 ---
 
-## Phase 1: CI/CD, Containerization & Environment
+## Phase 1: CI/CD, Containerization & Environment [DONE]
 *Goal: Establish the automated build, test, and deployment foundation.*
 
 ### 1.1 Dockerization
-- [ ] **Backend (C++)**:
-    - [ ] Create a Multi-stage `Dockerfile` (Build vs Runtime).
-    - [ ] Configure `docker-compose.yml` for local development (Backend, Postgres, Redis, Coturn).
-- [ ] **Frontend (React/TS)**:
-    - [ ] Create a `Dockerfile` for the frontend (Build vs NGINX Runtime).
-- [ ] **SFU Worker**:
-    - [ ] Containerize the `mediasoup-worker` independent service.
+- [x] **Backend (C++)**:
+    - [x] Create a Multi-stage `Dockerfile` (Build vs Runtime).
+    - [x] Configure `docker-compose.yml` for local development (Backend, Postgres, Redis, Coturn).
+- [x] **Frontend (React/TS)**:
+    - [x] Create a `Dockerfile` for the frontend (Build vs NGINX Runtime).
+- [x] **SFU Worker**:
+    - [x] Containerize the `mediasoup-worker` independent service (stub).
 
 ### 1.2 Local Jenkins CI/CD
-- [ ] **Jenkins Setup**:
-    - [ ] Install Jenkins locally (Docker or Host-based).
-    - [ ] Configure **GitHub Plugin** and **GitHub Status API** credentials.
-- [ ] **Pipeline Configuration**:
-    - [ ] Define `Jenkinsfile` with the following mandatory stages:
-        - [ ] **Build**: Compile C++ backend and Frontend assets.
-        - [ ] **Unit testing**: Run `GoogleTest` and `Vitest` unit suites.
-        - [ ] **Integration testing**: Verify DB connections and WebSocket signaling.
-        - [ ] **Acceptance testing**: Execute E2E Playwright scenarios.
-- [ ] **GitHub Feedback**:
-    - [ ] Configure `post`-build actions to update the GitHub Pull Request status (Success/Failure) via the Status API.
+- [x] **Jenkins Setup**:
+    - [x] Install Jenkins locally (Docker or Host-based).
+    - [x] Configure **GitHub Plugin** and **GitHub Status API** credentials.
+- [x] **Pipeline Configuration**:
+    - [x] Define `Jenkinsfile` with the following mandatory stages:
+        - [x] **Build**: Compile C++ backend and Frontend assets.
+        - [x] **Unit testing**: Run `GoogleTest` and `Vitest` unit suites.
+        - [x] **Integration testing**: Verify DB connections and WebSocket signaling.
+        - [x] **Acceptance testing**: Execute E2E Playwright scenarios.
+- [x] **GitHub Feedback**:
+    - [x] Configure `post`-build actions to update the GitHub Pull Request status (Success/Failure) via the Status API.
 
 ### 1.3 Testing Foundation
-- [ ] Set up **Sanitizers** (ASan, TSan) in the C++ build for early memory/race detection.
-- [ ] Configure **Client-side E2E test runner** (Playwright or Cypress) in the CI pipeline.
+- [x] Set up **Sanitizers** (ASan, TSan) in the C++ build for early memory/race detection.
+- [x] Configure **Client-side E2E test runner** (Playwright or Cypress) in the CI pipeline.
 
 ---
 
 ## Phase 2: Foundation & Authentication
 *Goal: Secure user identity and core backend scaffolding with integrated tests.*
 
-### 2.1 Backend & Concurrency Scaffolding
-- [ ] Set up CMake with strict warnings and **Signal Handler Abstraction**.
-- [ ] Implement `TaskQueue` and `WorkerThread` classes.
-- [ ] **Test**: Unit test `TaskQueue` for thread-safety and `WorkerThread` for message processing.
+### 2.1 Backend & Concurrency Scaffolding [DONE]
+- [x] Set up CMake with strict warnings and **Signal Handler Abstraction**.
+- [x] Implement `TaskQueue` and `WorkerThread` classes.
+- [x] **Test**: Unit test `TaskQueue` for thread-safety and `WorkerThread` for message processing.
 
-### 2.2 Database & Authentication
-- [ ] Define Postgres schemas and implement `PostgresClient`.
-- [ ] Implement `AuthService` (Register/Login) with Argon2id.
-- [ ] **Test**: Integration tests for DB CRUD and Auth logic (mocking Postgres).
+### 2.2 Database & Authentication [DONE]
+- [x] Define Postgres schemas and implement `PostgresClient`.
+- [x] Implement `AuthService` (Register/Login) with Argon2id.
+- [x] **Test**: Integration tests for DB CRUD and Auth logic.
 
-### 2.3 Frontend Foundation
-- [ ] Scaffold Vite/Tailwind/Lucide project.
-- [ ] Implement `AuthStore` and Auth UI components.
-- [ ] **Test**: Unit tests for `AuthStore` and Component tests for Login forms.
+### 2.3 Frontend Foundation [DONE]
+- [x] Scaffold Vite/Tailwind/Lucide project.
+- [x] Implement `AuthStore` and Auth UI components.
+- [x] **Test**: Unit tests for `AuthStore` and Component tests for Login forms.
 
 ---
 
