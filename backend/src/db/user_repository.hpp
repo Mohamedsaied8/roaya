@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * User repository interface for database operations
@@ -49,4 +49,4 @@ private:
   std::mutex mutex_;
 };
 
-} // namespace zoom
+} // namespace roaya

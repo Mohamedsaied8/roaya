@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * HTTP Request structure
@@ -68,4 +68,4 @@ struct HttpResponse {
   }
 };
 
-} // namespace zoom
+} // namespace roaya

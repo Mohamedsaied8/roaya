@@ -3,7 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Signaling message types for WebSocket communication
@@ -233,4 +233,4 @@ struct SignalingMessage {
   std::string toString() const { return toJson().dump(); }
 };
 
-} // namespace zoom
+} // namespace roaya

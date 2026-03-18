@@ -9,7 +9,7 @@
 #include <thread>
 #include <unordered_map>
 
-namespace zoom {
+namespace roaya {
 
 // Forward declarations
 class Room;
@@ -76,4 +76,4 @@ private:
   mutable std::mutex mutex_;
 };
 
-} // namespace zoom
+} // namespace roaya

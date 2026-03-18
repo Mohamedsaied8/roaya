@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Represents a meeting room with up to 50 participants
@@ -82,4 +82,4 @@ private:
   std::chrono::system_clock::time_point createdTime_;
 };
 
-} // namespace zoom
+} // namespace roaya

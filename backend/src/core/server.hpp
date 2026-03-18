@@ -4,7 +4,7 @@
 #include <atomic>
 #include <memory>
 
-namespace zoom {
+namespace roaya {
 
 // Forward declarations
 class Config;
@@ -44,4 +44,4 @@ private:
   // std::unique_ptr<SfuServer> sfuServer_;
 };
 
-} // namespace zoom
+} // namespace roaya

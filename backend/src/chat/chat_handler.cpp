@@ -2,7 +2,7 @@
 #include <random>
 #include <sstream>
 
-namespace zoom {
+namespace roaya {
 
 ChatHandler &ChatHandler::getInstance() {
   static ChatHandler instance;
@@ -66,4 +66,4 @@ void ChatHandler::clearHistory(const std::string &roomId) {
   roomMessages_.erase(roomId);
 }
 
-} // namespace zoom
+} // namespace roaya

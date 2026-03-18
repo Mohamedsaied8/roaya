@@ -4,7 +4,7 @@
 #include <random>
 #include <sstream>
 
-namespace zoom {
+namespace roaya {
 
 RoomManager &RoomManager::getInstance() {
   static RoomManager instance;
@@ -174,4 +174,4 @@ void RoomManager::cleanupInactiveRooms(int maxInactiveMinutes) {
   }
 }
 
-} // namespace zoom
+} // namespace roaya

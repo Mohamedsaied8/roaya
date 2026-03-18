@@ -6,7 +6,7 @@
 #include <spdlog/spdlog.h>
 #include <string>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Logger wrapper using spdlog for high-performance logging
@@ -14,10 +14,10 @@ namespace zoom {
 class Logger {
 public:
   static void init(const std::string &logLevel = "info",
-                   const std::string &logFile = "logs/zoom_app.log");
+                   const std::string &logFile = "logs/roaya.log");
 
   static std::shared_ptr<spdlog::logger> get() {
-    return spdlog::get("zoom_app");
+    return spdlog::get("roaya");
   }
 
   // Convenience macros
@@ -52,12 +52,12 @@ public:
   }
 };
 
-} // namespace zoom
+} // namespace roaya
 
 // Convenience macros
-#define LOG_TRACE(...) zoom::Logger::trace(__VA_ARGS__)
-#define LOG_DEBUG(...) zoom::Logger::debug(__VA_ARGS__)
-#define LOG_INFO(...) zoom::Logger::info(__VA_ARGS__)
-#define LOG_WARN(...) zoom::Logger::warn(__VA_ARGS__)
-#define LOG_ERROR(...) zoom::Logger::error(__VA_ARGS__)
-#define LOG_CRITICAL(...) zoom::Logger::critical(__VA_ARGS__)
+#define LOG_TRACE(...) roaya::Logger::trace(__VA_ARGS__)
+#define LOG_DEBUG(...) roaya::Logger::debug(__VA_ARGS__)
+#define LOG_INFO(...) roaya::Logger::info(__VA_ARGS__)
+#define LOG_WARN(...) roaya::Logger::warn(__VA_ARGS__)
+#define LOG_ERROR(...) roaya::Logger::error(__VA_ARGS__)
+#define LOG_CRITICAL(...) roaya::Logger::critical(__VA_ARGS__)

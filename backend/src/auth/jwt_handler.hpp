@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * JWT token handler for authentication
@@ -37,4 +37,4 @@ private:
   static std::string secret_;
 };
 
-} // namespace zoom
+} // namespace roaya

@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Chat message structure
@@ -56,4 +56,4 @@ private:
   std::mutex mutex_;
 };
 
-} // namespace zoom
+} // namespace roaya

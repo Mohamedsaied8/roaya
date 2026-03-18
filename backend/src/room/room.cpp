@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <random>
 
-namespace zoom {
+namespace roaya {
 
 Room::Room(const std::string &id, const std::string &name,
            const std::string &hostId)
@@ -169,4 +169,4 @@ nlohmann::json Room::toJsonWithParticipants() const {
           {"active", active_}};
 }
 
-} // namespace zoom
+} // namespace roaya

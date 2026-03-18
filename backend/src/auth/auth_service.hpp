@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * User data structure
@@ -68,4 +68,4 @@ private:
   std::string generateUserId();
 };
 
-} // namespace zoom
+} // namespace roaya

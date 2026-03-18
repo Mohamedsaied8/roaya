@@ -8,7 +8,7 @@
     "database": {
         "host": "localhost",
         "port": 5432,
-        "name": "zoom_app",
+        "name": "roaya",
         "user": "postgres",
         "password": ""
     },
@@ -26,11 +26,11 @@
     },
     "ssl": {
         "enabled": false,
-        "cert_path": "/etc/ssl/certs/zoom_app.crt",
-        "key_path": "/etc/ssl/private/zoom_app.key"
+        "cert_path": "/etc/ssl/certs/roaya.crt",
+        "key_path": "/etc/ssl/private/roaya.key"
     },
     "logging": {
         "level": "info",
-        "file": "logs/zoom_app.log"
+        "file": "logs/roaya.log"
     }
 }

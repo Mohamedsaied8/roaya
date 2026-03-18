@@ -5,7 +5,7 @@
 #include <memory>
 #include <optional>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Configuration manager for the application
@@ -62,7 +62,7 @@ private:
     // Database
     std::string dbHost_ = "localhost";
     uint16_t dbPort_ = 5432;
-    std::string dbName_ = "zoom_app";
+    std::string dbName_ = "roaya";
     std::string dbUser_ = "postgres";
     std::string dbPassword_ = "";
     
@@ -84,4 +84,4 @@ private:
     std::string sslKeyPath_;
 };
 
-} // namespace zoom
+} // namespace roaya

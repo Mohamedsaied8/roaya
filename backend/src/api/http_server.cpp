@@ -7,7 +7,7 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
-namespace zoom {
+namespace roaya {
 
 HttpServer::HttpServer(uint16_t port) : port_(port) {}
 
@@ -310,4 +310,4 @@ void HttpServer::setupUserRoutes() {
                });
 }
 
-} // namespace zoom
+} // namespace roaya

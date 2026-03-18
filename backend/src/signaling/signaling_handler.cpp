@@ -6,7 +6,7 @@
 #include <chrono>
 #include <nlohmann/json.hpp>
 
-namespace zoom {
+namespace roaya {
 
 SignalingHandler &SignalingHandler::getInstance() {
   static SignalingHandler instance;
@@ -473,4 +473,4 @@ void SignalingHandler::broadcastToRoom(const std::string &roomId,
   }
 }
 
-} // namespace zoom
+} // namespace roaya

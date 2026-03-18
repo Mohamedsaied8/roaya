@@ -79,7 +79,7 @@ export default function LoginPage() {
                         marginBottom: 'var(--spacing-md)'
                     }}>
                         <Video size={40} color="var(--color-primary)" />
-                        <span style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>ZoomLike</span>
+                        <span style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>Roaya</span>
                     </div>
                     <h1 style={{ fontSize: 'var(--font-size-xl)', marginBottom: 'var(--spacing-sm)' }}>
                         {isRegister ? 'Create your account' : 'Welcome back'}

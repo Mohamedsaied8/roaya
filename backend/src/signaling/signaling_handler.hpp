@@ -4,7 +4,7 @@
 #include "websocket_server.hpp"
 #include <memory>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Handles signaling messages and routes them appropriately
@@ -66,4 +66,4 @@ private:
   WebSocketServer *wsServer_ = nullptr;
 };
 
-} // namespace zoom
+} // namespace roaya

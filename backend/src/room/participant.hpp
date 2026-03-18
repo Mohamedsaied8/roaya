@@ -5,7 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Represents a participant in a room
@@ -63,4 +63,4 @@ private:
   std::chrono::system_clock::time_point joinTime_;
 };
 
-} // namespace zoom
+} // namespace roaya

@@ -3,7 +3,7 @@
 #include <chrono>
 #include <jwt-cpp/jwt.h>
 
-namespace zoom {
+namespace roaya {
 
 std::string JwtHandler::secret_ = "change-this-secret-in-production";
 
@@ -16,7 +16,7 @@ std::string JwtHandler::createToken(const std::string &userId,
   auto expiry = now + std::chrono::hours(expiryHours);
 
   auto token = jwt::create()
-                   .set_issuer("zoom-app")
+                   .set_issuer("roaya")
                    .set_type("JWT")
                    .set_issued_at(now)
                    .set_expires_at(expiry)
@@ -34,7 +34,7 @@ JwtHandler::verifyToken(const std::string &token) {
   try {
     auto verifier = jwt::verify()
                         .allow_algorithm(jwt::algorithm::hs256{secret_})
-                        .with_issuer("zoom-app");
+                        .with_issuer("roaya");
 
     auto decoded = jwt::decode(token);
     verifier.verify(decoded);
@@ -71,4 +71,4 @@ std::optional<std::string> JwtHandler::refreshToken(const std::string &token) {
   return createToken(payload->userId, payload->email, payload->name);
 }
 
-} // namespace zoom
+} // namespace roaya

@@ -8,7 +8,7 @@
 #include <csignal>
 #include <thread>
 #include <vector>
-namespace zoom {
+namespace roaya {
 
 namespace {
 std::atomic<bool> g_shutdownRequested{false};
@@ -37,7 +37,7 @@ bool Server::initialize(const std::string &configPath) {
   Logger::init("info");
 
   LOG_INFO("===========================================");
-  LOG_INFO("  Zoom-Like Video Conferencing Server");
+  LOG_INFO("  Roaya Video Conferencing Server");
   LOG_INFO("  Version 1.0.0");
   LOG_INFO("===========================================");
 
@@ -154,4 +154,4 @@ void Server::startMediaServer() {
   // TODO: Implement SFU server loop
 }
 
-} // namespace zoom
+} // namespace roaya

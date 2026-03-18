@@ -140,9 +140,9 @@ set(ALL_SOURCES
 # Main Library
 # =====================
 
-add_library(zoom_app_lib STATIC ${ALL_SOURCES})
+add_library(roaya_lib STATIC ${ALL_SOURCES})
 
-target_include_directories(zoom_app_lib PUBLIC
+target_include_directories(roaya_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${uwebsockets_SOURCE_DIR}/src
@@ -150,7 +150,7 @@ target_include_directories(zoom_app_lib PUBLIC
     ${httplib_SOURCE_DIR}
 )
 
-target_link_libraries(zoom_app_lib PUBLIC
+target_link_libraries(roaya_lib PUBLIC
     Threads::Threads
     OpenSSL::SSL
     OpenSSL::Crypto
@@ -167,8 +167,8 @@ target_link_libraries(zoom_app_lib PUBLIC
 # Main Executable
 # =====================
 
-add_executable(zoom_server src/main.cpp)
-target_link_libraries(zoom_server PRIVATE zoom_app_lib)
+add_executable(roaya_server src/main.cpp)
+target_link_libraries(zoom_server PRIVATE roaya_lib)
 
 # =====================
 # Tests
@@ -193,7 +193,7 @@ if(BUILD_TESTS)
         tests/unit/test_webrtc_signaling.cpp
         tests/unit/test_room_controls.cpp
     )
-    target_link_libraries(unit_tests PRIVATE zoom_app_lib GTest::gtest_main GTest::gmock GTest::gmock_main)
+    target_link_libraries(unit_tests PRIVATE roaya_lib GTest::gtest_main GTest::gmock GTest::gmock_main)
     include(GoogleTest)
     gtest_discover_tests(unit_tests)
 endif()
@@ -206,7 +206,7 @@ install(TARGETS zoom_server
     RUNTIME DESTINATION bin
 )
 
-install(DIRECTORY include/zoom_app
+install(DIRECTORY include/roaya
     DESTINATION include
 )
 

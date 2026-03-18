@@ -8,7 +8,7 @@
 // Note: This is a simplified implementation
 // In production, use uWebSockets or libwebsockets for actual WebSocket handling
 
-namespace zoom {
+namespace roaya {
 
 WebSocketServer::WebSocketServer(uint16_t port) : port_(port) {}
 
@@ -221,4 +221,4 @@ void WebSocketServer::handleMessage(const std::string &connId,
   SignalingHandler::getInstance().handleMessage(conn, message);
 }
 
-} // namespace zoom
+} // namespace roaya

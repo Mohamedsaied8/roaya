@@ -6,7 +6,7 @@
 #include <random>
 #include <sstream>
 
-namespace zoom {
+namespace roaya {
 
 AuthService &AuthService::getInstance() {
   static AuthService instance;
@@ -176,4 +176,4 @@ bool AuthService::updateProfile(const std::string &userId,
   return true;
 }
 
-} // namespace zoom
+} // namespace roaya

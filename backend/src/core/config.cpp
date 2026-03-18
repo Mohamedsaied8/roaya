@@ -5,7 +5,7 @@
 #include <spdlog/spdlog.h>
 #include <sstream>
 
-namespace zoom {
+namespace roaya {
 
 Config &Config::getInstance() {
   static Config instance;
@@ -98,4 +98,4 @@ bool Config::loadFromFile(const std::string &filepath) {
   }
 }
 
-} // namespace zoom
+} // namespace roaya

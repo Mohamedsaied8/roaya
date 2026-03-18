@@ -4,7 +4,7 @@
 #include "../../room/room_manager.hpp"
 #include "../http_types.hpp"
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Room API routes
@@ -124,4 +124,4 @@ public:
   }
 };
 
-} // namespace zoom
+} // namespace roaya

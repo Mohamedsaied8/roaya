@@ -4,7 +4,7 @@
 #include "../../core/logger.hpp"
 #include "../http_types.hpp"
 
-namespace zoom {
+namespace roaya {
 
 /**
  * User API routes
@@ -60,4 +60,4 @@ public:
   }
 };
 
-} // namespace zoom
+} // namespace roaya

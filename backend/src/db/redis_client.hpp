@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Session data stored in Redis
@@ -70,4 +70,4 @@ private:
   std::mutex mutex_;
 };
 
-} // namespace zoom
+} // namespace roaya

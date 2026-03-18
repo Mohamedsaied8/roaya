@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-namespace zoom {
+namespace roaya {
 
 void Logger::init(const std::string &logLevel, const std::string &logFile) {
   try {
@@ -23,7 +23,7 @@ void Logger::init(const std::string &logLevel, const std::string &logFile) {
 
     // Create multi-sink logger
     std::vector<spdlog::sink_ptr> sinks{consoleSink, fileSink};
-    auto logger = std::make_shared<spdlog::logger>("zoom_app", sinks.begin(),
+    auto logger = std::make_shared<spdlog::logger>("roaya", sinks.begin(),
                                                    sinks.end());
 
     // Set log level
@@ -56,4 +56,4 @@ void Logger::init(const std::string &logLevel, const std::string &logFile) {
   }
 }
 
-} // namespace zoom
+} // namespace roaya

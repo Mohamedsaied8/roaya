@@ -1,6 +1,6 @@
 #include "user_repository.hpp"
 
-namespace zoom {
+namespace roaya {
 
 std::optional<User> UserRepository::create(const User &user) {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -75,4 +75,4 @@ size_t UserRepository::count() {
   return users_.size();
 }
 
-} // namespace zoom
+} // namespace roaya

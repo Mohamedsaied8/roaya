@@ -11,7 +11,7 @@ namespace httplib {
 class Server;
 }
 
-namespace zoom {
+namespace roaya {
 
 /**
  * HTTP server for REST API endpoints
@@ -39,4 +39,4 @@ private:
   std::unique_ptr<httplib::Server> server_;
 };
 
-} // namespace zoom
+} // namespace roaya

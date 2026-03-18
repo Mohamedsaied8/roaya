@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Password hasher using Argon2 or bcrypt-style hashing
@@ -22,4 +22,4 @@ private:
   static std::string sha256(const std::string &input);
 };
 
-} // namespace zoom
+} // namespace roaya

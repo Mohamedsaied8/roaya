@@ -6,7 +6,7 @@
 #include <optional>
 #include <unordered_map>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Manages all active rooms in the system
@@ -51,4 +51,4 @@ private:
   mutable std::mutex mutex_;
 };
 
-} // namespace zoom
+} // namespace roaya

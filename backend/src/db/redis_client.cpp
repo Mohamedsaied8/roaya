@@ -1,7 +1,7 @@
 #include "redis_client.hpp"
 #include "../core/logger.hpp"
 
-namespace zoom {
+namespace roaya {
 
 bool RedisClient::connect(const std::string &host, int port) {
   // In production, use hiredis:
@@ -105,4 +105,4 @@ bool RedisClient::publish(const std::string &channel,
   return true;
 }
 
-} // namespace zoom
+} // namespace roaya

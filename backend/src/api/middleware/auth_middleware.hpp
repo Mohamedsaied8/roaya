@@ -4,7 +4,7 @@
 #include "../http_types.hpp"
 #include <string>
 
-namespace zoom {
+namespace roaya {
 
 /**
  * Authentication middleware
@@ -61,4 +61,4 @@ public:
   }
 };
 
-} // namespace zoom
+} // namespace roaya

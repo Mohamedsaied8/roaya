@@ -5,7 +5,7 @@
 #include <sstream>
 #include <vector>
 
-namespace zoom {
+namespace roaya {
 
 std::string PasswordHasher::generateSalt(size_t length) {
   std::vector<unsigned char> buffer(length);
@@ -74,4 +74,4 @@ bool PasswordHasher::verify(const std::string &password,
   return result;
 }
 
-} // namespace zoom
+} // namespace roaya

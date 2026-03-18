@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     if ((arg == "-c" || arg == "--config") && i + 1 < argc) {
       configPath = argv[++i];
     } else if (arg == "-h" || arg == "--help") {
-      std::cout << "Zoom-Like Video Conferencing Server\n"
+      std::cout << "Roaya Video Conferencing Server\n"
                 << "Usage: " << argv[0] << " [options]\n"
                 << "Options:\n"
                 << "  -c, --config <path>  Path to config file (default: "
@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
   }
 
   try {
-    zoom::Server server;
+    roaya::Server server;
 
     if (!server.initialize(configPath)) {
       std::cerr << "Failed to initialize server" << std::endl;

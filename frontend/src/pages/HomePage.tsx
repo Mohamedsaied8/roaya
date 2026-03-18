@@ -92,7 +92,7 @@ export default function HomePage() {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-sm)' }}>
                     <Video size={32} color="var(--color-primary)" />
-                    <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700 }}>ZoomLike</span>
+                    <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700 }}>Roaya</span>
                 </div>
 
                 {isAuthenticated ? (

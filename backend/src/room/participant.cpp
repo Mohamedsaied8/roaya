@@ -1,7 +1,7 @@
 #include "participant.hpp"
 #include <nlohmann/json.hpp>
 
-namespace zoom {
+namespace roaya {
 
 Participant::Participant(const std::string &id, const std::string &name)
     : id_(id), name_(name), joinTime_(std::chrono::system_clock::now()) {}
@@ -33,4 +33,4 @@ nlohmann::json Participant::toJson() const {
                            .count()}};
 }
 
-} // namespace zoom
+} // namespace roaya
