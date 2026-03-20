@@ -20,6 +20,9 @@ pipeline {
                     agent {
                         docker { image 'node:20-bullseye-slim' }
                     }
+                    environment {
+                        npm_config_cache = "npm-cache"
+                    }
                     steps {
                         dir('frontend') {
                             sh "npm install"
@@ -42,6 +45,9 @@ pipeline {
                 stage('Frontend Vitest') {
                     agent {
                         docker { image 'node:20-bullseye-slim' }
+                    }
+                    environment {
+                        npm_config_cache = "npm-cache"
                     }
                     steps {
                         dir('frontend') {
