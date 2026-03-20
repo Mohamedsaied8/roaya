@@ -1,0 +1,23 @@
+{
+  "name": "roaya-sfu",
+  "version": "1.0.0",
+  "description": "SFU Worker Service for Roaya using mediasoup",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "node dist/main.js",
+    "dev": "tsc-watch --onSuccess \"node dist/main.js\"",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "mediasoup": "^3.12.0",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.37",
+    "@types/socket.io": "^3.0.1",
+    "@types/uuid": "^9.0.8",
+    "tsc-watch": "^6.0.4",
+    "typescript": "^5.3.2"
+  }
+}

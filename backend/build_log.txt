@@ -1,0 +1,454 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 853B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/ubuntu:22.04
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/debian:bookworm-slim
+#3 DONE 0.8s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 61B done
+#4 DONE 0.0s
+
+#5 [builder 1/5] FROM docker.io/library/ubuntu:22.04
+#5 DONE 0.0s
+
+#6 [stage-1 1/6] FROM docker.io/library/debian:bookworm-slim@sha256:f06537653ac770703bc45b4b113475bd402f451e85223f0f2837acbf89ab020a
+#6 CACHED
+
+#7 [internal] load build context
+#7 transferring context: 4.73kB 0.0s done
+#7 DONE 0.0s
+
+#8 [builder 2/5] RUN apt-get update && apt-get install -y     build-essential     cmake     git     libssl-dev     zlib1g-dev     libpq-dev     pkg-config     python3     && rm -rf /var/lib/apt/lists/*
+#8 CACHED
+
+#9 [builder 3/5] WORKDIR /app
+#9 CACHED
+
+#10 [builder 4/5] COPY . .
+#10 DONE 0.1s
+
+#11 [stage-1 2/6] RUN apt-get update && apt-get install -y     libssl3     zlib1g     libpq5     && rm -rf /var/lib/apt/lists/*
+#11 0.517 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#11 0.691 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#11 0.758 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [48.0 kB]
+#11 0.825 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8792 kB]
+#11 4.669 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+#11 4.726 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [293 kB]
+#11 5.874 Fetched 9346 kB in 6s (1695 kB/s)
+#11 5.874 Reading package lists...
+#11 6.547 Reading package lists...
+#11 7.295 Building dependency tree...
+#11 7.450 Reading state information...
+#11 7.628 zlib1g is already the newest version (1:1.2.13.dfsg-1).
+#11 7.628 zlib1g set to manually installed.
+#11 7.628 The following additional packages will be installed:
+#11 7.629   krb5-locales libgssapi-krb5-2 libk5crypto3 libkeyutils1 libkrb5-3
+#11 7.629   libkrb5support0 libldap-2.5-0 libldap-common libsasl2-2 libsasl2-modules
+#11 7.630   libsasl2-modules-db
+#11 7.631 Suggested packages:
+#11 7.631   krb5-doc krb5-user libsasl2-modules-gssapi-mit
+#11 7.631   | libsasl2-modules-gssapi-heimdal libsasl2-modules-ldap libsasl2-modules-otp
+#11 7.631   libsasl2-modules-sql
+#11 7.731 The following NEW packages will be installed:
+#11 7.731   krb5-locales libgssapi-krb5-2 libk5crypto3 libkeyutils1 libkrb5-3
+#11 7.732   libkrb5support0 libldap-2.5-0 libldap-common libpq5 libsasl2-2
+#11 7.732   libsasl2-modules libsasl2-modules-db libssl3
+#11 7.966 0 upgraded, 13 newly installed, 0 to remove and 0 not upgraded.
+#11 7.966 Need to get 3239 kB of archives.
+#11 7.966 After this operation, 10.5 MB of additional disk space will be used.
+#11 7.966 Get:1 http://deb.debian.org/debian bookworm/main amd64 krb5-locales all 1.20.1-2+deb12u4 [63.4 kB]
+#11 8.247 Get:2 http://deb.debian.org/debian bookworm/main amd64 libkrb5support0 amd64 1.20.1-2+deb12u4 [33.2 kB]
+#11 8.376 Get:3 http://deb.debian.org/debian bookworm/main amd64 libk5crypto3 amd64 1.20.1-2+deb12u4 [79.8 kB]
+#11 8.405 Get:4 http://deb.debian.org/debian bookworm/main amd64 libkeyutils1 amd64 1.6.3-2 [8808 B]
+#11 8.492 Get:5 http://deb.debian.org/debian-security bookworm-security/main amd64 libssl3 amd64 3.0.18-1~deb12u2 [2030 kB]
+#11 ...
+
+#12 [builder 5/5] RUN mkdir -p build && cd build &&     cmake -DCMAKE_BUILD_TYPE=Release .. &&     make -j$(nproc)
+#12 0.281 -- The CXX compiler identification is GNU 11.4.0
+#12 0.324 -- The C compiler identification is GNU 11.4.0
+#12 0.330 -- Detecting CXX compiler ABI info
+#12 0.406 -- Detecting CXX compiler ABI info - done
+#12 0.415 -- Check for working CXX compiler: /usr/bin/c++ - skipped
+#12 0.415 -- Detecting CXX compile features
+#12 0.415 -- Detecting CXX compile features - done
+#12 0.418 -- Detecting C compiler ABI info
+#12 0.480 -- Detecting C compiler ABI info - done
+#12 0.487 -- Check for working C compiler: /usr/bin/cc - skipped
+#12 0.487 -- Detecting C compile features
+#12 0.488 -- Detecting C compile features - done
+#12 0.500 -- Found PostgreSQL: /usr/lib/x86_64-linux-gnu/libpq.so (found version "14.22")  
+#12 0.501 -- Looking for pthread.h
+#12 0.568 -- Looking for pthread.h - found
+#12 0.568 -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+#12 0.636 -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+#12 0.637 -- Found Threads: TRUE  
+#12 0.680 -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+#12 0.685 -- Found ZLIB: /usr/lib/x86_64-linux-gnu/libz.so (found version "1.2.11") 
+#12 ...
+
+#11 [stage-1 2/6] RUN apt-get update && apt-get install -y     libssl3     zlib1g     libpq5     && rm -rf /var/lib/apt/lists/*
+#11 11.86 Get:6 http://deb.debian.org/debian bookworm/main amd64 libkrb5-3 amd64 1.20.1-2+deb12u4 [334 kB]
+#11 12.14 Get:7 http://deb.debian.org/debian bookworm/main amd64 libgssapi-krb5-2 amd64 1.20.1-2+deb12u4 [135 kB]
+#11 12.25 Get:8 http://deb.debian.org/debian bookworm/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg-10 [20.3 kB]
+#11 12.30 Get:9 http://deb.debian.org/debian bookworm/main amd64 libsasl2-2 amd64 2.1.28+dfsg-10 [59.7 kB]
+#11 12.47 Get:10 http://deb.debian.org/debian bookworm/main amd64 libldap-2.5-0 amd64 2.5.13+dfsg-5 [183 kB]
+#11 12.72 Get:11 http://deb.debian.org/debian bookworm/main amd64 libldap-common all 2.5.13+dfsg-5 [29.3 kB]
+#11 12.75 Get:12 http://deb.debian.org/debian-security bookworm-security/main amd64 libpq5 amd64 15.16-0+deb12u1 [196 kB]
+#11 13.09 Get:13 http://deb.debian.org/debian bookworm/main amd64 libsasl2-modules amd64 2.1.28+dfsg-10 [66.6 kB]
+#11 13.31 debconf: delaying package configuration, since apt-utils is not installed
+#11 13.34 Fetched 3239 kB in 5s (597 kB/s)
+#11 13.37 Selecting previously unselected package krb5-locales.
+#11 13.37 (Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 6096 files and directories currently installed.)
+#11 13.40 Preparing to unpack .../00-krb5-locales_1.20.1-2+deb12u4_all.deb ...
+#11 13.40 Unpacking krb5-locales (1.20.1-2+deb12u4) ...
+#11 13.48 Selecting previously unselected package libkrb5support0:amd64.
+#11 13.49 Preparing to unpack .../01-libkrb5support0_1.20.1-2+deb12u4_amd64.deb ...
+#11 13.50 Unpacking libkrb5support0:amd64 (1.20.1-2+deb12u4) ...
+#11 13.56 Selecting previously unselected package libk5crypto3:amd64.
+#11 13.56 Preparing to unpack .../02-libk5crypto3_1.20.1-2+deb12u4_amd64.deb ...
+#11 13.57 Unpacking libk5crypto3:amd64 (1.20.1-2+deb12u4) ...
+#11 13.65 Selecting previously unselected package libkeyutils1:amd64.
+#11 13.65 Preparing to unpack .../03-libkeyutils1_1.6.3-2_amd64.deb ...
+#11 13.66 Unpacking libkeyutils1:amd64 (1.6.3-2) ...
+#11 13.72 Selecting previously unselected package libssl3:amd64.
+#11 13.72 Preparing to unpack .../04-libssl3_3.0.18-1~deb12u2_amd64.deb ...
+#11 13.72 Unpacking libssl3:amd64 (3.0.18-1~deb12u2) ...
+#11 13.91 Selecting previously unselected package libkrb5-3:amd64.
+#11 13.91 Preparing to unpack .../05-libkrb5-3_1.20.1-2+deb12u4_amd64.deb ...
+#11 13.92 Unpacking libkrb5-3:amd64 (1.20.1-2+deb12u4) ...
+#11 14.00 Selecting previously unselected package libgssapi-krb5-2:amd64.
+#11 14.00 Preparing to unpack .../06-libgssapi-krb5-2_1.20.1-2+deb12u4_amd64.deb ...
+#11 14.01 Unpacking libgssapi-krb5-2:amd64 (1.20.1-2+deb12u4) ...
+#11 14.06 Selecting previously unselected package libsasl2-modules-db:amd64.
+#11 14.06 Preparing to unpack .../07-libsasl2-modules-db_2.1.28+dfsg-10_amd64.deb ...
+#11 14.07 Unpacking libsasl2-modules-db:amd64 (2.1.28+dfsg-10) ...
+#11 14.12 Selecting previously unselected package libsasl2-2:amd64.
+#11 14.12 Preparing to unpack .../08-libsasl2-2_2.1.28+dfsg-10_amd64.deb ...
+#11 14.13 Unpacking libsasl2-2:amd64 (2.1.28+dfsg-10) ...
+#11 14.22 Selecting previously unselected package libldap-2.5-0:amd64.
+#11 14.22 Preparing to unpack .../09-libldap-2.5-0_2.5.13+dfsg-5_amd64.deb ...
+#11 14.23 Unpacking libldap-2.5-0:amd64 (2.5.13+dfsg-5) ...
+#11 14.28 Selecting previously unselected package libldap-common.
+#11 14.28 Preparing to unpack .../10-libldap-common_2.5.13+dfsg-5_all.deb ...
+#11 14.29 Unpacking libldap-common (2.5.13+dfsg-5) ...
+#11 14.35 Selecting previously unselected package libpq5:amd64.
+#11 14.35 Preparing to unpack .../11-libpq5_15.16-0+deb12u1_amd64.deb ...
+#11 14.36 Unpacking libpq5:amd64 (15.16-0+deb12u1) ...
+#11 14.44 Selecting previously unselected package libsasl2-modules:amd64.
+#11 14.44 Preparing to unpack .../12-libsasl2-modules_2.1.28+dfsg-10_amd64.deb ...
+#11 14.47 Unpacking libsasl2-modules:amd64 (2.1.28+dfsg-10) ...
+#11 14.54 Setting up libkeyutils1:amd64 (1.6.3-2) ...
+#11 14.56 Setting up libssl3:amd64 (3.0.18-1~deb12u2) ...
+#11 14.58 Setting up krb5-locales (1.20.1-2+deb12u4) ...
+#11 14.60 Setting up libldap-common (2.5.13+dfsg-5) ...
+#11 14.62 Setting up libkrb5support0:amd64 (1.20.1-2+deb12u4) ...
+#11 14.64 Setting up libsasl2-modules-db:amd64 (2.1.28+dfsg-10) ...
+#11 14.67 Setting up libk5crypto3:amd64 (1.20.1-2+deb12u4) ...
+#11 14.69 Setting up libsasl2-2:amd64 (2.1.28+dfsg-10) ...
+#11 14.71 Setting up libkrb5-3:amd64 (1.20.1-2+deb12u4) ...
+#11 14.73 Setting up libsasl2-modules:amd64 (2.1.28+dfsg-10) ...
+#11 14.76 Setting up libldap-2.5-0:amd64 (2.5.13+dfsg-5) ...
+#11 14.78 Setting up libgssapi-krb5-2:amd64 (1.20.1-2+deb12u4) ...
+#11 14.80 Setting up libpq5:amd64 (15.16-0+deb12u1) ...
+#11 14.83 Processing triggers for libc-bin (2.36-9+deb12u13) ...
+#11 DONE 15.0s
+
+#12 [builder 5/5] RUN mkdir -p build && cd build &&     cmake -DCMAKE_BUILD_TYPE=Release .. &&     make -j$(nproc)
+#12 ...
+
+#13 [stage-1 3/6] WORKDIR /app
+#13 DONE 0.1s
+
+#12 [builder 5/5] RUN mkdir -p build && cd build &&     cmake -DCMAKE_BUILD_TYPE=Release .. &&     make -j$(nproc)
+#12 120.8 -- Using the multi-header code from /app/build/_deps/nlohmann_json-src/include/
+#12 149.5 -- Build spdlog: 1.13.0
+#12 149.5 -- Build type: Release
+#12 151.8 -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found suitable version "3.0.2", minimum required is "1.0.1")  
+#12 151.8 -- Could NOT find nlohmann_json (missing: nlohmann_json_DIR)
+#12 151.8 -- jwt-cpp: using FetchContent for nlohmann json
+#12 151.8 -- Could NOT find jsoncons (missing: jsoncons_DIR)
+#12 151.8 -- Could NOT find nlohmann_json (missing: nlohmann_json_DIR)
+#12 548.3 -- Looking for poll
+#12 548.5 -- Looking for poll - found
+#12 548.5 -- Detecting CXX compile features
+#12 548.5 -- Detecting CXX compile features - done
+#12 552.9 -- Generating config.h
+#12 552.9 -- Generating config.h - done
+#12 560.3 -- Found Python3: /usr/bin/python3.10 (found version "3.10.12") found components: Interpreter 
+#12 560.3 -- Configuring done
+#12 560.4 -- Generating done
+#12 560.4 -- Build files have been written to: /app/build
+#12 560.5 [  1%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/bsd.c.o
+#12 560.5 [  2%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/crypto/openssl.c.o
+#12 560.5 [  2%] Building CXX object _deps/spdlog-build/CMakeFiles/spdlog.dir/src/spdlog.cpp.o
+#12 560.5 [  4%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/array.cxx.o
+#12 560.5 [  4%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/context.c.o
+#12 560.5 [  4%] Building CXX object _deps/jwt-cpp-build/example/CMakeFiles/print-claims.dir/print-claims.cpp.o
+#12 560.5 [  5%] Building CXX object _deps/jwt-cpp-build/example/CMakeFiles/private-claims.dir/private-claims.cpp.o
+#12 560.5 [  6%] Building CXX object _deps/googletest-build/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o
+#12 560.5 [  7%] Building CXX object _deps/spdlog-build/CMakeFiles/spdlog.dir/src/stdout_sinks.cpp.o
+#12 560.5 [  7%] Building C object CMakeFiles/argon2.dir/_deps/argon2-src/src/argon2.c.o
+#12 560.5 [  8%] Building CXX object _deps/jwt-cpp-build/example/CMakeFiles/rsa-create.dir/rsa-create.cpp.o
+#12 560.5 [  9%] Building CXX object _deps/jwt-cpp-build/example/CMakeFiles/rsa-verify.dir/rsa-verify.cpp.o
+#12 560.8 /app/build/_deps/usockets-src/src/crypto/openssl.c: In function 'create_ssl_context_from_options':
+#12 560.8 /app/build/_deps/usockets-src/src/crypto/openssl.c:499:13: warning: 'PEM_read_DHparams' is deprecated: Since OpenSSL 3.0 [-Wdeprecated-declarations]
+#12 560.8   499 |             dh_2048 = PEM_read_DHparams(paramfile, NULL, NULL, NULL);
+#12 560.8       |             ^~~~~~~
+#12 560.8 In file included from /usr/include/openssl/ssl.h:36,
+#12 560.8                  from /app/build/_deps/usockets-src/src/crypto/openssl.c:34:
+#12 560.8 /usr/include/openssl/pem.h:469:1: note: declared here
+#12 560.8   469 | DECLARE_PEM_rw_attr(OSSL_DEPRECATEDIN_3_0, DHparams, DH)
+#12 560.8       | ^~~~~~~~~~~~~~~~~~~
+#12 560.8 /app/build/_deps/usockets-src/src/crypto/openssl.c:512:9: warning: 'DH_free' is deprecated: Since OpenSSL 3.0 [-Wdeprecated-declarations]
+#12 560.8   512 |         DH_free(dh_2048);
+#12 560.8       |         ^~~~~~~
+#12 560.8 In file included from /usr/include/openssl/dsa.h:51,
+#12 560.8                  from /usr/include/openssl/x509.h:37,
+#12 560.8                  from /usr/include/openssl/ssl.h:31,
+#12 560.8                  from /app/build/_deps/usockets-src/src/crypto/openssl.c:34:
+#12 560.8 /usr/include/openssl/dh.h:204:28: note: declared here
+#12 560.8   204 | OSSL_DEPRECATEDIN_3_0 void DH_free(DH *dh);
+#12 560.8       |                            ^~~~~~~
+#12 560.8 [  9%] Building CXX object CMakeFiles/usockets.dir/_deps/usockets-src/src/crypto/sni_tree.cpp.o
+#12 560.9 [ 10%] Building CXX object _deps/jwt-cpp-build/example/CMakeFiles/jwks-verify.dir/jwks-verify.cpp.o
+#12 561.0 [ 11%] Building C object CMakeFiles/argon2.dir/_deps/argon2-src/src/core.c.o
+#12 561.1 [ 11%] Building CXX object _deps/spdlog-build/CMakeFiles/spdlog.dir/src/color_sinks.cpp.o
+#12 561.3 [ 11%] Building C object CMakeFiles/argon2.dir/_deps/argon2-src/src/blake2/blake2b.c.o
+#12 561.7 [ 12%] Building C object CMakeFiles/argon2.dir/_deps/argon2-src/src/thread.c.o
+#12 561.8 [ 12%] Building C object CMakeFiles/argon2.dir/_deps/argon2-src/src/encoding.c.o
+#12 562.0 [ 13%] Building C object CMakeFiles/argon2.dir/_deps/argon2-src/src/ref.c.o
+#12 562.4 [ 13%] Linking C static library lib/libargon2.a
+#12 562.5 [ 13%] Built target argon2
+#12 562.6 [ 14%] Building CXX object _deps/jwt-cpp-build/example/CMakeFiles/es256k.dir/es256k.cpp.o
+#12 563.5 [ 15%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/eventing/epoll_kqueue.c.o
+#12 563.7 [ 15%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/eventing/gcd.c.o
+#12 563.8 [ 16%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/eventing/libuv.c.o
+#12 563.9 [ 16%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/loop.c.o
+#12 564.1 [ 17%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/quic.c.o
+#12 564.1 [ 17%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/socket.c.o
+#12 564.3 [ 18%] Building C object CMakeFiles/usockets.dir/_deps/usockets-src/src/udp.c.o
+#12 564.4 [ 19%] Linking CXX static library lib/libusockets.a
+#12 564.5 [ 19%] Built target usockets
+#12 564.5 [ 19%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/binarystring.cxx.o
+#12 565.2 [ 20%] Building CXX object _deps/jwt-cpp-build/example/CMakeFiles/partial-claim-verifier.dir/partial-claim-verifier.cpp.o
+#12 565.7 [ 21%] Building CXX object _deps/jwt-cpp-build/example/traits/CMakeFiles/nlohmann-json.dir/nlohmann-json.cpp.o
+#12 566.4 [ 21%] Linking CXX executable ../../../bin/rsa-create
+#12 566.7 [ 22%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/blob.cxx.o
+#12 566.7 [ 22%] Linking CXX executable ../../../bin/print-claims
+#12 566.8 [ 22%] Built target rsa-create
+#12 566.8 [ 23%] Building CXX object _deps/spdlog-build/CMakeFiles/spdlog.dir/src/file_sinks.cpp.o
+#12 567.0 [ 23%] Built target print-claims
+#12 567.0 [ 23%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/connection.cxx.o
+#12 567.6 [ 23%] Building CXX object _deps/spdlog-build/CMakeFiles/spdlog.dir/src/async.cpp.o
+#12 567.7 [ 23%] Linking CXX executable ../../../bin/jwks-verify
+#12 567.7 [ 23%] Linking CXX executable ../../../bin/rsa-verify
+#12 568.0 [ 23%] Built target jwks-verify
+#12 568.0 [ 23%] Built target rsa-verify
+#12 568.0 [ 24%] Building CXX object _deps/spdlog-build/CMakeFiles/spdlog.dir/src/cfg.cpp.o
+#12 568.0 [ 25%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/cursor.cxx.o
+#12 568.7 [ 25%] Linking CXX executable ../../../bin/private-claims
+#12 568.9 [ 25%] Built target private-claims
+#12 568.9 [ 25%] Building CXX object _deps/spdlog-build/CMakeFiles/spdlog.dir/src/bundled_fmtlib_format.cpp.o
+#12 570.6 [ 25%] Linking CXX executable ../../../bin/es256k
+#12 570.9 [ 25%] Built target es256k
+#12 570.9 [ 25%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/encodings.cxx.o
+#12 571.2 [ 26%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/errorhandler.cxx.o
+#12 571.5 [ 26%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/except.cxx.o
+#12 571.5 [ 27%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/field.cxx.o
+#12 571.5 [ 27%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/largeobject.cxx.o
+#12 571.7 [ 28%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/notification.cxx.o
+#12 573.6 [ 28%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/params.cxx.o
+#12 573.7 [ 29%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/pipeline.cxx.o
+#12 573.9 [ 29%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/result.cxx.o
+#12 574.3 [ 30%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/robusttransaction.cxx.o
+#12 574.4 [ 30%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/row.cxx.o
+#12 574.6 [ 31%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/sql_cursor.cxx.o
+#12 575.2 [ 31%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/strconv.cxx.o
+#12 577.7 [ 32%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/stream_from.cxx.o
+#12 577.8 [ 32%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/stream_to.cxx.o
+#12 578.1 [ 33%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/subtransaction.cxx.o
+#12 578.2 [ 33%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/time.cxx.o
+#12 578.4 [ 34%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/transaction.cxx.o
+#12 578.4 [ 34%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/transaction_base.cxx.o
+#12 578.9 [ 35%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/util.cxx.o
+#12 580.7 [ 35%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/version.cxx.o
+#12 580.7 [ 36%] Building CXX object _deps/libpqxx-build/src/CMakeFiles/pqxx.dir/wait.cxx.o
+#12 581.2 [ 36%] Linking CXX executable ../../../bin/partial-claim-verifier
+#12 581.4 [ 36%] Built target partial-claim-verifier
+#12 581.4 [ 37%] Linking CXX static library ../../lib/libspdlog.a
+#12 581.5 [ 37%] Built target spdlog
+#12 582.1 [ 37%] Linking CXX static library ../../../lib/libpqxx-7.9.a
+#12 582.1 [ 37%] Built target pqxx
+#12 582.2 [ 38%] Building CXX object CMakeFiles/roaya_lib.dir/src/core/worker_thread.cpp.o
+#12 582.2 [ 38%] Building CXX object CMakeFiles/roaya_lib.dir/src/core/server.cpp.o
+#12 582.2 [ 39%] Building CXX object CMakeFiles/roaya_lib.dir/src/core/logger.cpp.o
+#12 582.2 [ 40%] Building CXX object CMakeFiles/roaya_lib.dir/src/signaling/websocket_server.cpp.o
+#12 582.2 [ 41%] Building CXX object CMakeFiles/roaya_lib.dir/src/core/signal_handler.cpp.o
+#12 582.2 [ 41%] Building CXX object CMakeFiles/roaya_lib.dir/src/signaling/signaling_handler.cpp.o
+#12 582.2 [ 42%] Building CXX object CMakeFiles/roaya_lib.dir/src/api/http_server.cpp.o
+#12 582.2 [ 42%] Building CXX object CMakeFiles/roaya_lib.dir/src/core/config.cpp.o
+#12 582.2 [ 42%] Building CXX object CMakeFiles/roaya_lib.dir/src/media/sfu/sfu_manager.cpp.o
+#12 582.2 [ 43%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/runner.cxx.o
+#12 583.3 [ 43%] Linking CXX executable ../../../../bin/nlohmann-json
+#12 583.5 [ 43%] Built target nlohmann-json
+#12 583.5 [ 43%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test00.cxx.o
+#12 585.9 [ 43%] Linking CXX static library ../../../lib/libgtest.a
+#12 586.0 [ 43%] Built target gtest
+#12 586.0 [ 43%] Building CXX object CMakeFiles/roaya_lib.dir/src/room/room_manager.cpp.o
+#12 586.6 [ 44%] Building CXX object _deps/googletest-build/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o
+#12 587.9 [ 45%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test01.cxx.o
+#12 589.3 [ 45%] Linking CXX static library ../../../lib/libgtest_main.a
+#12 589.4 [ 45%] Built target gtest_main
+#12 589.4 [ 46%] Building CXX object CMakeFiles/roaya_lib.dir/src/room/room.cpp.o
+#12 590.8 [ 46%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test02.cxx.o
+#12 593.8 [ 47%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test04.cxx.o
+#12 597.0 [ 47%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test07.cxx.o
+#12 600.5 [ 48%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test10.cxx.o
+#12 600.9 [ 48%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test11.cxx.o
+#12 601.9 [ 49%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o
+#12 603.2 [ 50%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test13.cxx.o
+#12 603.8 [ 50%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test14.cxx.o
+#12 604.1 [ 51%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test16.cxx.o
+#12 605.2 [ 51%] Building CXX object CMakeFiles/roaya_lib.dir/src/room/participant.cpp.o
+#12 606.4 [ 52%] Building CXX object CMakeFiles/roaya_lib.dir/src/auth/auth_service.cpp.o
+#12 606.5 [ 52%] Building CXX object CMakeFiles/roaya_lib.dir/src/auth/jwt_handler.cpp.o
+#12 607.5 [ 52%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test17.cxx.o
+#12 609.2 [ 53%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test18.cxx.o
+#12 609.5 [ 53%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test20.cxx.o
+#12 610.2 [ 53%] Linking CXX static library ../../../lib/libgmock.a
+#12 610.3 [ 53%] Built target gmock
+#12 610.3 [ 54%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test21.cxx.o
+#12 610.4 [ 55%] Building CXX object CMakeFiles/roaya_lib.dir/src/auth/password_hasher.cpp.o
+#12 611.8 [ 56%] Building CXX object _deps/googletest-build/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o
+#12 612.7 [ 56%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test26.cxx.o
+#12 612.8 [ 57%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test29.cxx.o
+#12 613.3 [ 57%] Building CXX object CMakeFiles/roaya_lib.dir/src/chat/chat_handler.cpp.o
+#12 614.2 [ 58%] Building CXX object CMakeFiles/roaya_lib.dir/src/db/user_repository.cpp.o
+#12 614.2 [ 58%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test30.cxx.o
+#12 615.7 [ 59%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test32.cxx.o
+#12 615.9 [ 59%] Linking CXX static library ../../../lib/libgmock_main.a
+#12 616.0 [ 59%] Built target gmock_main
+#12 616.0 [ 59%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test37.cxx.o
+#12 616.6 [ 60%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test39.cxx.o
+#12 617.3 [ 60%] Building CXX object CMakeFiles/roaya_lib.dir/src/db/redis_client.cpp.o
+#12 618.5 [ 61%] Building CXX object CMakeFiles/roaya_lib.dir/src/db/postgres_client.cpp.o
+#12 618.8 [ 61%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test46.cxx.o
+#12 619.7 [ 62%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test56.cxx.o
+#12 619.9 [ 62%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test60.cxx.o
+#12 620.5 [ 63%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test61.cxx.o
+#12 622.6 [ 63%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test62.cxx.o
+#12 622.7 /app/src/db/postgres_client.cpp: In member function 'pqxx::result roaya::PostgresClient::executeQuery(const string&, const std::vector<std::__cxx11::basic_string<char> >&)':
+#12 622.7 /app/src/db/postgres_client.cpp:54:67: warning: 'constexpr auto pqxx::prepare::make_dynamic_params(const C&) [with C = std::vector<std::__cxx11::basic_string<char> >]' is deprecated: Use the params class instead. [-Wdeprecated-declarations]
+#12 622.7    54 |       return W.exec_params(sql, pqxx::prepare::make_dynamic_params(params));
+#12 622.7       |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+#12 622.7 In file included from /app/build/_deps/libpqxx-src/include/pqxx/connection.hxx:37,
+#12 622.7                  from /app/build/_deps/libpqxx-src/include/pqxx/array.hxx:26,
+#12 622.7                  from /app/build/_deps/libpqxx-src/include/pqxx/pqxx:4,
+#12 622.7                  from /app/src/db/postgres_client.hpp:4,
+#12 622.7                  from /app/src/db/postgres_client.cpp:1:
+#12 622.7 /app/build/_deps/libpqxx-src/include/pqxx/params.hxx:346:1: note: declared here
+#12 622.7   346 | make_dynamic_params(C const &container)
+#12 622.7       | ^~~~~~~~~~~~~~~~~~~
+#12 623.8 [ 64%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test69.cxx.o
+#12 623.9 [ 64%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test70.cxx.o
+#12 624.3 [ 65%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test71.cxx.o
+#12 625.9 [ 65%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test72.cxx.o
+#12 626.8 [ 66%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test74.cxx.o
+#12 627.9 [ 66%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test75.cxx.o
+#12 628.5 [ 67%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test76.cxx.o
+#12 629.3 [ 67%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test77.cxx.o
+#12 629.8 [ 68%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test78.cxx.o
+#12 631.8 [ 68%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test79.cxx.o
+#12 632.3 [ 69%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test82.cxx.o
+#12 632.3 [ 69%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test84.cxx.o
+#12 632.3 [ 70%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test87.cxx.o
+#12 632.6 [ 70%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test88.cxx.o
+#12 633.4 [ 71%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test89.cxx.o
+#12 634.3 [ 71%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/test90.cxx.o
+#12 635.1 [ 72%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_array.cxx.o
+#12 635.3 [ 72%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_binarystring.cxx.o
+#12 635.8 [ 73%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_blob.cxx.o
+#12 636.2 [ 73%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_cancel_query.cxx.o
+#12 636.5 [ 74%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_column.cxx.o
+#12 636.6 [ 74%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_composite.cxx.o
+#12 636.7 [ 75%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_connection.cxx.o
+#12 637.6 [ 75%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_cursor.cxx.o
+#12 638.1 [ 76%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_encodings.cxx.o
+#12 639.0 [ 76%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_error_verbosity.cxx.o
+#12 639.3 [ 77%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_errorhandler.cxx.o
+#12 640.6 [ 77%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_escape.cxx.o
+#12 641.8 [ 78%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_exceptions.cxx.o
+#12 642.1 [ 78%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_field.cxx.o
+#12 642.6 [ 79%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_float.cxx.o
+#12 642.9 [ 79%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_largeobject.cxx.o
+#12 643.4 [ 80%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_nonblocking_connect.cxx.o
+#12 643.4 [ 80%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_notification.cxx.o
+#12 644.0 [ 81%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_pipeline.cxx.o
+#12 645.9 [ 81%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_prepared_statement.cxx.o
+#12 646.1 [ 82%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_range.cxx.o
+#12 646.5 [ 82%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_read_transaction.cxx.o
+#12 647.1 [ 83%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_result_iteration.cxx.o
+#12 647.3 [ 83%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_result_slicing.cxx.o
+#12 647.3 [ 84%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_row.cxx.o
+#12 648.0 [ 84%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_separated_list.cxx.o
+#12 648.1 [ 85%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_simultaneous_transactions.cxx.o
+#12 648.2 [ 85%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_sql_cursor.cxx.o
+#12 648.2 [ 85%] Linking CXX static library lib/libroaya_lib.a
+#12 648.7 [ 85%] Built target roaya_lib
+#12 648.7 [ 86%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_stateless_cursor.cxx.o
+#12 649.9 [ 86%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_strconv.cxx.o
+#12 651.3 [ 87%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_stream_from.cxx.o
+#12 651.8 [ 88%] Building CXX object CMakeFiles/roaya_server.dir/src/main.cpp.o
+#12 651.9 [ 88%] Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_main.cpp.o
+#12 652.9 [ 89%] Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_create_room.cpp.o
+#12 653.0 [ 89%] Building CXX object CMakeFiles/test_auth_db.dir/tests/integration/test_auth_db.cpp.o
+#12 653.2 [ 89%] Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_join_room.cpp.o
+#12 653.3 [ 90%] Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_webrtc_signaling.cpp.o
+#12 653.5 [ 90%] Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_room_controls.cpp.o
+#12 654.1 [ 91%] Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_concurrency.cpp.o
+#12 654.7 [ 91%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_stream_query.cxx.o
+#12 654.9 [ 92%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_stream_to.cxx.o
+#12 656.0 [ 92%] Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_task_queue.cpp.o
+#12 660.3 [ 93%] Building CXX object CMakeFiles/unit_tests.dir/tests/unit/test_worker_thread.cpp.o
+#12 660.9 [ 93%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_string_conversion.cxx.o
+#12 662.9 [ 94%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_subtransaction.cxx.o
+#12 663.2 [ 94%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_test_helpers.cxx.o
+#12 664.3 [ 95%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_thread_safety_model.cxx.o
+#12 665.9 [ 95%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_time.cxx.o
+#12 666.6 [ 96%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_transaction.cxx.o
+#12 666.6 [ 96%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_transaction_base.cxx.o
+#12 668.2 [ 97%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_transaction_focus.cxx.o
+#12 668.9 [ 97%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_transactor.cxx.o
+#12 671.1 [ 98%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_type_name.cxx.o
+#12 671.9 [ 98%] Building CXX object _deps/libpqxx-build/test/CMakeFiles/runner.dir/unit/test_zview.cxx.o
+#12 675.1 [ 98%] Linking CXX executable bin/roaya_server
+#12 675.6 [ 99%] Linking CXX executable ../../../bin/runner
+#12 676.1 [ 99%] Built target roaya_server
+#12 676.1 [ 99%] Built target runner
+#12 677.5 [100%] Linking CXX executable bin/test_auth_db
+#12 677.9 [100%] Built target test_auth_db
+#12 682.9 [100%] Linking CXX executable bin/unit_tests
+#12 683.2 [100%] Built target unit_tests
+#12 DONE 683.4s
+
+#14 [stage-1 4/6] COPY --from=builder /app/build/bin/roaya_server .
+#14 DONE 0.1s
+
+#15 [stage-1 5/6] COPY --from=builder /app/config ./config
+#15 DONE 0.1s
+
+#16 [stage-1 6/6] RUN mkdir -p logs
+#16 DONE 0.2s
+
+#17 exporting to image
+#17 exporting layers
+#17 exporting layers 0.2s done
+#17 writing image sha256:0609899474c503538d7a2479645cc45cce220300ced6d72c35c218a757b2e4db done
+#17 naming to docker.io/library/roaya-backend done
+#17 DONE 0.3s

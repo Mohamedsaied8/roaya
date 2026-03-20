@@ -819,7 +819,9 @@ describe('Bug Fix Verification', () => {
             // Action: Simulate browser "Stop sharing" button click
             const screenVideoTrack = mockScreenStream.getVideoTracks()[0]
             expect(screenVideoTrack.onended).toBeDefined()
-            screenVideoTrack.onended()
+            if (screenVideoTrack.onended) {
+                screenVideoTrack.onended(new Event('ended'))
+            }
 
             // Assert: Callback should be fired
             expect(callback).toHaveBeenCalledTimes(1)

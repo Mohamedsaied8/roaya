@@ -14,8 +14,9 @@ export class SignalingClient {
     private messageHandlers: Map<MessageType, MessageHandler[]> = new Map()
     private connectionPromise: Promise<void> | null = null
     private pingInterval: number | null = null
+    private pendingRequests: Map<string, { resolve: (val: any) => void, reject: (err: any) => void, timeout: number }> = new Map()
 
-    constructor(url: string = `ws://${window.location.hostname}:8081`) {
+    constructor(url: string = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`) {
         this.url = url
     }
 
@@ -97,6 +98,28 @@ export class SignalingClient {
 
         this.ws.send(JSON.stringify(message))
     }
+    /**
+     * Send a request and wait for response
+     */
+    async request(type: MessageType, payload: Record<string, unknown> = {}, options: {
+        roomId?: string
+        targetId?: string
+        timeout?: number
+    } = {}): Promise<SignalingMessage> {
+        const correlationId = Math.random().toString(36).substring(2, 15);
+        const timeoutMs = options.timeout || 10000;
+
+        return new Promise((resolve, reject) => {
+            const timer = window.setTimeout(() => {
+                this.pendingRequests.delete(correlationId);
+                reject(new Error(`Request timeout: ${type}`));
+            }, timeoutMs);
+
+            this.pendingRequests.set(correlationId, { resolve, reject, timeout: timer });
+
+            this.send(type, { ...payload, correlationId }, options);
+        });
+    }
 
     /**
      * Register a handler for a specific message type
@@ -128,6 +151,14 @@ export class SignalingClient {
             console.debug('Received message:', message.type, message)
             
             const handlers = this.messageHandlers.get(message.type)
+
+            const correlationId = (message.payload as any)?.correlationId;
+            if (correlationId && this.pendingRequests.has(correlationId)) {
+                const { resolve, timeout } = this.pendingRequests.get(correlationId)!;
+                window.clearTimeout(timeout);
+                this.pendingRequests.delete(correlationId);
+                resolve(message);
+            }
 
             if (handlers) {
                 handlers.forEach((handler) => handler(message))

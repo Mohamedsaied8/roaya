@@ -30,6 +30,12 @@ export type MessageType =
     | 'kick_participant'
     | 'mute_all'
     | 'end_meeting'
+    | 'sfu_get_router_rtp_capabilities'
+    | 'sfu_create_webrtc_transport'
+    | 'sfu_connect_webrtc_transport'
+    | 'sfu_produce'
+    | 'sfu_consume'
+    | 'sfu_restart_ice'
     | 'error';
 
 export interface SignalingMessage {

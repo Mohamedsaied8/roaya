@@ -1,4 +1,5 @@
 #include "signaling_handler.hpp"
+#include "media/sfu/sfu_manager.hpp" // Added include
 #include "../core/logger.hpp"
 #include "../room/participant.hpp"
 #include "../room/room.hpp"
@@ -25,6 +26,15 @@ void SignalingHandler::handleMessage(std::shared_ptr<WebSocketConnection> conn,
     switch (msg.type) {
     case MessageType::CREATE_ROOM:
       handleCreateRoom(conn, msg);
+      break;
+    case MessageType::SFU_CREATE_WEBRTC_TRANSPORT:
+    case MessageType::SFU_CONNECT_WEBRTC_TRANSPORT:
+    case MessageType::SFU_PRODUCE:
+    case MessageType::SFU_CONSUME:
+    case MessageType::SFU_GET_ROUTER_RTP_CAPABILITIES:
+      SFUManager::getInstance().handleSFUMessage(msg, [conn](const SignalingMessage& res) {
+        conn->sendCallback(res.toString());
+      });
       break;
     case MessageType::JOIN_ROOM:
       handleJoinRoom(conn, msg);

@@ -40,11 +40,11 @@ include(FetchContent)
 
 # nlohmann/json
 FetchContent_Declare(
-    json
+    nlohmann_json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
     GIT_TAG v3.11.3
 )
-FetchContent_MakeAvailable(json)
+FetchContent_MakeAvailable(nlohmann_json)
 
 # spdlog (fast logging)
 FetchContent_Declare(
@@ -142,6 +142,7 @@ set(CORE_SOURCES
 )
 
 set(SIGNALING_SOURCES
+    src/media/sfu/sfu_manager.cpp
     src/signaling/websocket_server.cpp
     src/signaling/signaling_handler.cpp
 )

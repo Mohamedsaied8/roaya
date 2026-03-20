@@ -5,11 +5,12 @@ services:
     build:
       context: ./backend
     ports:
-      - "8080:8080"
+      - "9090:8080"
       - "8081:8081"
     environment:
       - DB_HOST=db
       - REDIS_HOST=redis
+      - SFU_URL=http://sfu:3000
     depends_on:
       - db
       - redis
@@ -20,7 +21,7 @@ services:
     build:
       context: ./frontend
     ports:
-      - "80:80"
+      - "8082:80"
     depends_on:
       - backend
 
@@ -41,8 +42,14 @@ services:
       - "6379:6379"
 
   sfu:
-    image: alpine
-    command: ["echo", "SFU Worker placeholder"]
+    build:
+      context: ./sfu
+    ports:
+      - "41000-41100:41000-41100/udp"
+      - "41000-41100:41000-41100/tcp"
+    environment:
+      - NODE_ENV=development
+      - SFU_ANNOUNCED_IP=127.0.0.1
 
 volumes:
   postgres_data:

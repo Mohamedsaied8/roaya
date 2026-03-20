@@ -1,5 +1,6 @@
 #include "core/logger.hpp"
 #include "core/server.hpp"
+#include "media/sfu/sfu_manager.hpp"
 #include <cstdlib>
 #include <iostream>
 
@@ -31,6 +32,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Run the server (blocking)
+    // Initialize SFU Manager
+    std::string sfuUrl = std::string(std::getenv("SFU_URL") ? std::getenv("SFU_URL") : "http://sfu:3000");
+    roaya::SFUManager::getInstance().initialize(sfuUrl);
+
     server.run();
 
     return 0;

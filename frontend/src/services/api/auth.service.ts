@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { User } from '../../types/room';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export interface LoginResponse {
   success: boolean;
@@ -17,7 +17,7 @@ export const authService = {
         email,
         password,
       });
-      return response.data;
+      return response.data as LoginResponse;
     } catch (error: any) {
       return {
         success: false,
@@ -33,7 +33,7 @@ export const authService = {
         password,
         name,
       });
-      return response.data;
+      return response.data as LoginResponse;
     } catch (error: any) {
       return {
         success: false,
@@ -49,7 +49,7 @@ export const authService = {
           Authorization: `Bearer ${token}`,
         },
       });
-      return response.data;
+      return response.data as LoginResponse;
     } catch (error: any) {
       return {
         success: false,

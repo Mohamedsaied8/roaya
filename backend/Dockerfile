@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     libpq-dev \
     pkg-config \
+    python3 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -19,7 +20,7 @@ WORKDIR /app
 COPY . .
 
 # Build
-RUN mkdir build && cd build && \
+RUN mkdir -p build && cd build && \
     cmake -DCMAKE_BUILD_TYPE=Release .. && \
     make -j$(nproc)
 
@@ -29,6 +30,7 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y \
     libssl3 \
     zlib1g \
+    libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

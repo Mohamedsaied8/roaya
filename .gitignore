@@ -13,9 +13,11 @@ frontend/node_modules/
 logs/
 backend/logs/
 
-# IDE files
+# IDE and development files
 .vscode/
 .idea/
+.cache/
+*.idx
 
 # OS files
 .DS_Store

@@ -53,6 +53,14 @@ enum class MessageType {
   MUTE_ALL,
   END_MEETING,
 
+  // SFU specific signaling (mediasoup)
+  SFU_GET_ROUTER_RTP_CAPABILITIES,
+  SFU_CREATE_WEBRTC_TRANSPORT,
+  SFU_CONNECT_WEBRTC_TRANSPORT,
+  SFU_PRODUCE,
+  SFU_CONSUME,
+  SFU_RESTART_ICE,
+
   // Errors
   ERROR,
 
@@ -123,6 +131,18 @@ inline std::string messageTypeToString(MessageType type) {
     return "mute_all";
   case MessageType::END_MEETING:
     return "end_meeting";
+  case MessageType::SFU_GET_ROUTER_RTP_CAPABILITIES:
+    return "sfu_get_router_rtp_capabilities";
+  case MessageType::SFU_CREATE_WEBRTC_TRANSPORT:
+    return "sfu_create_webrtc_transport";
+  case MessageType::SFU_CONNECT_WEBRTC_TRANSPORT:
+    return "sfu_connect_webrtc_transport";
+  case MessageType::SFU_PRODUCE:
+    return "sfu_produce";
+  case MessageType::SFU_CONSUME:
+    return "sfu_consume";
+  case MessageType::SFU_RESTART_ICE:
+    return "sfu_restart_ice";
   case MessageType::ERROR:
     return "error";
   default:
@@ -192,6 +212,18 @@ inline MessageType stringToMessageType(const std::string &str) {
     return MessageType::MUTE_ALL;
   if (str == "end_meeting")
     return MessageType::END_MEETING;
+  if (str == "sfu_get_router_rtp_capabilities")
+    return MessageType::SFU_GET_ROUTER_RTP_CAPABILITIES;
+  if (str == "sfu_create_webrtc_transport")
+    return MessageType::SFU_CREATE_WEBRTC_TRANSPORT;
+  if (str == "sfu_connect_webrtc_transport")
+    return MessageType::SFU_CONNECT_WEBRTC_TRANSPORT;
+  if (str == "sfu_produce")
+    return MessageType::SFU_PRODUCE;
+  if (str == "sfu_consume")
+    return MessageType::SFU_CONSUME;
+  if (str == "sfu_restart_ice")
+    return MessageType::SFU_RESTART_ICE;
   if (str == "error")
     return MessageType::ERROR;
   return MessageType::UNKNOWN;
