@@ -1,6 +1,5 @@
 #include "postgres_client.hpp"
 #include "../core/logger.hpp"
-#include <iostream>
 
 namespace roaya {
 
@@ -49,9 +48,11 @@ pqxx::result PostgresClient::executeQuery(const std::string &sql,
     if (params.empty()) {
       return W.exec(sql);
     } else {
-      // Named parameters are better, but for simplicity we'll use positional
-      // if using newer libpqxx versions. Here we use basic exec_params.
-      return W.exec_params(sql, pqxx::prepare::make_dynamic_params(params));
+      pqxx::params p;
+      for (const auto &param : params) {
+        p.append(param);
+      }
+      return W.exec_params(sql, p);
     }
   } catch (const std::exception &e) {
     LOG_ERROR("PostgreSQL query error: {}", e.what());

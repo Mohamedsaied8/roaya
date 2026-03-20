@@ -17,6 +17,9 @@ pipeline {
                     }
                 }
                 stage('Frontend') {
+                    agent {
+                        docker { image 'node:20-bullseye-slim' }
+                    }
                     steps {
                         dir('frontend') {
                             sh "npm install"
@@ -37,6 +40,9 @@ pipeline {
                     }
                 }
                 stage('Frontend Vitest') {
+                    agent {
+                        docker { image 'node:20-bullseye-slim' }
+                    }
                     steps {
                         dir('frontend') {
                             sh "npm test"
