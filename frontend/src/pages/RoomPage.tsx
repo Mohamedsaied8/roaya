@@ -202,7 +202,11 @@ export default function RoomPage() {
 
             {/* Main Content */}
             <div className="flex-1 flex overflow-hidden">
-                <VideoGrid participants={participants} />
+                <VideoGrid 
+                  participants={participants} 
+                  localParticipantId={localParticipant?.id || ''} 
+                  localName={localParticipant?.name}
+                />
 
                 {/* Panels */}
                 {isParticipantsOpen && (

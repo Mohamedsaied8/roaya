@@ -53,6 +53,20 @@ void SFUManager::handleSFUMessage(const SignalingMessage& msg,
                 responseCallback(response);
             });
             break;
+        case MessageType::SFU_GET_ACTIVE_PRODUCERS:
+            getActiveProducers(msg.roomId, [msg, responseCallback](const nlohmann::json& res) {
+                SignalingMessage response = msg;
+                response.payload = res;
+                responseCallback(response);
+            });
+            break;
+        case MessageType::SFU_CLOSE_PRODUCER:
+            closeProducer(msg.payload["producerId"].get<std::string>(), [msg, responseCallback](const nlohmann::json& res) {
+                SignalingMessage response = msg;
+                response.payload = res;
+                responseCallback(response);
+            });
+            break;
         default:
             LOG_WARN("Unhandled SFU message type: {}", static_cast<int>(msg.type));
             break;
@@ -125,6 +139,34 @@ void SFUManager::consume(const std::string& transportId, const std::string& prod
         callback(nlohmann::json::parse(res->body));
     } else {
         LOG_ERROR("Failed to consume on SFU: {}", transportId);
+        callback({{"success", false}, {"error", "SFU communication error"}});
+    }
+}
+
+void SFUManager::getActiveProducers(const std::string& roomId,
+                                    std::function<void(const nlohmann::json&)> callback) {
+    httplib::Client cli(sfuUrl_);
+    nlohmann::json body = {{"roomId", roomId}};
+
+    auto res = cli.Post("/get_active_producers", body.dump(), "application/json");
+    if (res && res->status == 200) {
+        callback(nlohmann::json::parse(res->body));
+    } else {
+        LOG_ERROR("Failed to get active producers for room: {}", roomId);
+        callback({{"success", false}, {"error", "SFU communication error"}});
+    }
+}
+
+void SFUManager::closeProducer(const std::string& producerId,
+                               std::function<void(const nlohmann::json&)> callback) {
+    httplib::Client cli(sfuUrl_);
+    nlohmann::json body = {{"producerId", producerId}};
+
+    auto res = cli.Post("/close_producer", body.dump(), "application/json");
+    if (res && res->status == 200) {
+        callback(nlohmann::json::parse(res->body));
+    } else {
+        LOG_ERROR("Failed to close producer: {}", producerId);
         callback({{"success", false}, {"error", "SFU communication error"}});
     }
 }

@@ -19,9 +19,17 @@ async function main() {
             const router = await mediasoupManager.getOrCreateRouter(data.roomId);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true, rtpCapabilities: router.rtpCapabilities }));
+          } else if (req.url === '/get_active_producers') {
+            const producers = mediasoupManager.getActiveProducers(data.roomId);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, producers }));
+          } else if (req.url === '/close_producer') {
+            mediasoupManager.closeProducer(data.producerId);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
           } else if (req.url === '/create_webrtc_transport') {
             const transport = await mediasoupManager.createWebRtcTransport(data.roomId);
-            mediasoupManager.storeTransport(transport);
+            mediasoupManager.storeTransport(transport, data.participantId);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({
               success: true,
@@ -35,7 +43,7 @@ async function main() {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true }));
           } else if (req.url === '/produce') {
-            const producer = await mediasoupManager.produce(data.transportId, data.kind, data.rtpParameters);
+            const producer = await mediasoupManager.produce(data.transportId, data.kind, data.rtpParameters, data.participantId);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true, id: producer.id }));
           } else if (req.url === '/consume') {
@@ -83,7 +91,7 @@ async function main() {
     socket.on('sfu_create_webrtc_transport', async (data, callback) => {
       try {
         const transport = await mediasoupManager.createWebRtcTransport(data.roomId);
-        mediasoupManager.storeTransport(transport);
+        mediasoupManager.storeTransport(transport, data.participantId);
         callback({
           success: true,
           params: {
@@ -109,7 +117,7 @@ async function main() {
 
     socket.on('sfu_produce', async (data, callback) => {
       try {
-        const producer = await mediasoupManager.produce(data.transportId, data.kind, data.rtpParameters);
+        const producer = await mediasoupManager.produce(data.transportId, data.kind, data.rtpParameters, data.participantId);
         callback({ success: true, id: producer.id });
       } catch (err: any) {
         callback({ success: false, error: err.message });
@@ -131,6 +139,36 @@ async function main() {
       } catch (err: any) {
         callback({ success: false, error: err.message });
       }
+    });
+
+    socket.on('sfu_get_active_producers', async (data, callback) => {
+      try {
+        const producers = mediasoupManager.getActiveProducers(data.roomId);
+        callback({ success: true, producers });
+      } catch (err: any) {
+        callback({ success: false, error: err.message });
+      }
+    });
+
+    socket.on('sfu_close_producer', async (data, callback) => {
+      try {
+        mediasoupManager.closeProducer(data.producerId);
+        callback({ success: true });
+      } catch (err: any) {
+        callback({ success: false, error: err.message });
+      }
+    });
+
+    // Store participantId on the socket for disconnect cleanup
+    socket.on('sfu_register_participant', (data) => {
+      socket.data.participantId = data.participantId;
+    });
+
+    socket.on('disconnect', () => {
+      if (socket.data?.participantId) {
+        mediasoupManager.closeParticipant(socket.data.participantId);
+      }
+      console.log('SFU client disconnected:', socket.id);
     });
   });
 

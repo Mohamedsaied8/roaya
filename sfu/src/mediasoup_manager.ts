@@ -1,6 +1,12 @@
 import * as mediasoup from 'mediasoup';
 import { Worker, Router, WebRtcTransport, Producer, Consumer } from 'mediasoup/node/lib/types';
-import { v4 as uuidv4 } from 'uuid';
+
+export interface ProducerInfo {
+  id: string;
+  kind: 'audio' | 'video';
+  roomId: string;
+  participantId: string;
+}
 
 export class MediasoupManager {
   private workers: Worker[] = [];
@@ -93,17 +99,31 @@ export class MediasoupManager {
   private transports: Map<string, WebRtcTransport> = new Map();
   private producers: Map<string, Producer> = new Map();
   private consumers: Map<string, Consumer> = new Map();
+  // Track which producers belong to which participant (for cleanup on disconnect)
+  private participantProducers: Map<string, Set<string>> = new Map();
+  private participantTransports: Map<string, Set<string>> = new Map();
 
-  public async produce(transportId: string, kind: 'audio' | 'video', rtpParameters: any): Promise<Producer> {
+  public async produce(transportId: string, kind: 'audio' | 'video', rtpParameters: any, participantId?: string): Promise<Producer> {
     const transport = this.transports.get(transportId);
     if (!transport) throw new Error('Transport not found');
 
-    const producer = await transport.produce({ kind, rtpParameters, appData: { roomId: transport.appData.roomId } });
+    const producer = await transport.produce({ kind, rtpParameters, appData: { roomId: transport.appData.roomId, participantId } });
     this.producers.set(producer.id, producer);
+
+    // Track producer for participant cleanup
+    if (participantId) {
+      if (!this.participantProducers.has(participantId)) {
+        this.participantProducers.set(participantId, new Set());
+      }
+      this.participantProducers.get(participantId)!.add(producer.id);
+    }
 
     producer.on('transportclose', () => {
       producer.close();
       this.producers.delete(producer.id);
+      if (participantId) {
+        this.participantProducers.get(participantId)?.delete(producer.id);
+      }
     });
 
     return producer;
@@ -146,7 +166,63 @@ export class MediasoupManager {
     return consumer;
   }
 
-  public storeTransport(transport: WebRtcTransport) {
+  public storeTransport(transport: WebRtcTransport, participantId?: string) {
     this.transports.set(transport.id, transport);
+    if (participantId) {
+      if (!this.participantTransports.has(participantId)) {
+        this.participantTransports.set(participantId, new Set());
+      }
+      this.participantTransports.get(participantId)!.add(transport.id);
+    }
+  }
+
+  /** Returns all active producers in a room (for new joiners to consume) */
+  public getActiveProducers(roomId: string): ProducerInfo[] {
+    const result: ProducerInfo[] = [];
+    for (const [id, producer] of this.producers) {
+      if (producer.appData.roomId === roomId && !producer.closed) {
+        result.push({
+          id,
+          kind: producer.kind as 'audio' | 'video',
+          roomId: producer.appData.roomId as string,
+          participantId: (producer.appData.participantId as string) || '',
+        });
+      }
+    }
+    return result;
+  }
+
+  /** Close all producers/transports for a participant on disconnect */
+  public closeParticipant(participantId: string): void {
+    const producerIds = this.participantProducers.get(participantId);
+    if (producerIds) {
+      for (const id of producerIds) {
+        const producer = this.producers.get(id);
+        if (producer && !producer.closed) producer.close();
+        this.producers.delete(id);
+      }
+      this.participantProducers.delete(participantId);
+    }
+
+    const transportIds = this.participantTransports.get(participantId);
+    if (transportIds) {
+      for (const id of transportIds) {
+        const transport = this.transports.get(id);
+        if (transport && !transport.closed) transport.close();
+        this.transports.delete(id);
+      }
+      this.participantTransports.delete(participantId);
+    }
+
+    console.log(`Cleaned up SFU resources for participant: ${participantId}`);
+  }
+
+  /** Close a single producer by ID */
+  public closeProducer(producerId: string): void {
+    const producer = this.producers.get(producerId);
+    if (producer && !producer.closed) {
+      producer.close();
+    }
+    this.producers.delete(producerId);
   }
 }

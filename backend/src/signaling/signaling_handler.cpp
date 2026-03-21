@@ -32,6 +32,8 @@ void SignalingHandler::handleMessage(std::shared_ptr<WebSocketConnection> conn,
     case MessageType::SFU_PRODUCE:
     case MessageType::SFU_CONSUME:
     case MessageType::SFU_GET_ROUTER_RTP_CAPABILITIES:
+    case MessageType::SFU_GET_ACTIVE_PRODUCERS:
+    case MessageType::SFU_CLOSE_PRODUCER:
       SFUManager::getInstance().handleSFUMessage(msg, [conn](const SignalingMessage& res) {
         conn->sendCallback(res.toString());
       });

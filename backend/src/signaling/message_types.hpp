@@ -60,6 +60,9 @@ enum class MessageType {
   SFU_PRODUCE,
   SFU_CONSUME,
   SFU_RESTART_ICE,
+  SFU_GET_ACTIVE_PRODUCERS,
+  SFU_CLOSE_PRODUCER,
+  SFU_NEW_PRODUCER,  // Server-push: tells clients a new producer is available
 
   // Errors
   ERROR,
@@ -143,6 +146,12 @@ inline std::string messageTypeToString(MessageType type) {
     return "sfu_consume";
   case MessageType::SFU_RESTART_ICE:
     return "sfu_restart_ice";
+  case MessageType::SFU_GET_ACTIVE_PRODUCERS:
+    return "sfu_get_active_producers";
+  case MessageType::SFU_CLOSE_PRODUCER:
+    return "sfu_close_producer";
+  case MessageType::SFU_NEW_PRODUCER:
+    return "sfu_new_producer";
   case MessageType::ERROR:
     return "error";
   default:
@@ -224,6 +233,12 @@ inline MessageType stringToMessageType(const std::string &str) {
     return MessageType::SFU_CONSUME;
   if (str == "sfu_restart_ice")
     return MessageType::SFU_RESTART_ICE;
+  if (str == "sfu_get_active_producers")
+    return MessageType::SFU_GET_ACTIVE_PRODUCERS;
+  if (str == "sfu_close_producer")
+    return MessageType::SFU_CLOSE_PRODUCER;
+  if (str == "sfu_new_producer")
+    return MessageType::SFU_NEW_PRODUCER;
   if (str == "error")
     return MessageType::ERROR;
   return MessageType::UNKNOWN;

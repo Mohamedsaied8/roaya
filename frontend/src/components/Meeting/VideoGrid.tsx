@@ -1,38 +1,61 @@
 import React from 'react';
 import { useMediaStore } from '../../store/useMediaStore';
+import { useActiveSpeaker } from '../../hooks/useActiveSpeaker';
 import { ParticipantVideo } from './ParticipantVideo';
 
-interface VideoGridProps {
-    participants: Array<{ id: string; name: string; isMuted?: boolean }>;
+interface Participant {
+  id: string;
+  name: string;
+  isMuted?: boolean;
+  isVideoMuted?: boolean;
+  isScreenSharing?: boolean;
 }
 
-export const VideoGrid: React.FC<VideoGridProps> = ({ participants }) => {
-    const { localStream, remoteStreams } = useMediaStore();
+interface VideoGridProps {
+  participants: Participant[];
+  localParticipantId: string;
+  localName?: string;
+}
 
-    return (
-        <div className="flex-1 p-6 overflow-y-auto">
-            <div className={`grid gap-4 h-full ${
-                participants.length <= 1 ? 'grid-cols-1' :
-                participants.length <= 4 ? 'grid-cols-2' :
-                'grid-cols-2 lg:grid-cols-3'
-            }`}>
-                {/* Local Participant */}
-                <ParticipantVideo 
-                    stream={localStream} 
-                    participantName="You" 
-                    isLocal={true} 
-                />
+export const VideoGrid: React.FC<VideoGridProps> = ({ participants, localParticipantId, localName = 'You' }) => {
+  const { localStream, remoteStreams } = useMediaStore();
+  const activeSpeakerId = useActiveSpeaker(remoteStreams, localStream, localParticipantId);
 
-                {/* Remote Participants */}
-                {participants.map((p) => (
-                    <ParticipantVideo
-                        key={p.id}
-                        stream={remoteStreams.get(p.id) || null}
-                        participantName={p.name}
-                        isMuted={p.isMuted}
-                    />
-                ))}
-            </div>
-        </div>
-    );
+  // Total tiles = local + remote participants (excluding self from participants list)
+  const remoteParticipants = participants.filter(p => p.id !== localParticipantId);
+  const totalCount = 1 + remoteParticipants.length;
+
+  const gridClass =
+    totalCount === 1 ? 'grid-cols-1' :
+    totalCount === 2 ? 'grid-cols-2' :
+    totalCount <= 4 ? 'grid-cols-2' :
+    totalCount <= 6 ? 'grid-cols-3' :
+    'grid-cols-3 lg:grid-cols-4';
+
+  return (
+    <div className="flex-1 p-4 overflow-y-auto bg-gray-950">
+      <div className={`grid gap-3 h-full ${gridClass}`}>
+        {/* Local Participant — always first */}
+        <ParticipantVideo
+          stream={localStream}
+          participantName={localName}
+          isLocal={true}
+          isActiveSpeaker={activeSpeakerId === localParticipantId}
+        />
+
+        {/* Remote Participants */}
+        {remoteParticipants.map(p => (
+          <ParticipantVideo
+            key={p.id}
+            stream={remoteStreams.get(p.id) || null}
+            participantName={p.name}
+            isMuted={p.isMuted}
+            isVideoMuted={p.isVideoMuted}
+            isScreenSharing={p.isScreenSharing}
+            isActiveSpeaker={activeSpeakerId === p.id}
+          />
+        ))}
+      </div>
+    </div>
+  );
 };

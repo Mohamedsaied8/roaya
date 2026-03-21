@@ -35,6 +35,10 @@ private:
                 std::function<void(const nlohmann::json&)> callback);
     void consume(const std::string& transportId, const std::string& producerId, const nlohmann::json& rtpCapabilities,
                 std::function<void(const nlohmann::json&)> callback);
+    void getActiveProducers(const std::string& roomId,
+                           std::function<void(const nlohmann::json&)> callback);
+    void closeProducer(const std::string& producerId,
+                      std::function<void(const nlohmann::json&)> callback);
 };
 
 } // namespace roaya
