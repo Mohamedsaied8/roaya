@@ -14,7 +14,18 @@ pipeline {
     stages {
         stage('Initialize') {
             steps {
-                githubNotify context: 'Jenkins/Build', status: 'PENDING', description: 'Build is in progress...'
+                script {
+                    try {
+                        // Notify GitHub that the build is starting
+                        step([$class: 'GitHubCommitStatusSetter',
+                            contextSource: [$class: 'DefaultCommitContextSource', context: 'Jenkins/Build'],
+                            statusResultSource: [$class: 'ConditionalStatusResultSource', 
+                                results: [[$class: 'AnyBuildResult', message: 'Build is in progress...', state: 'PENDING']]]
+                        ])
+                    } catch (Exception e) {
+                        echo "GitHub notification failed: ${e.message}"
+                    }
+                }
             }
         }
 
@@ -85,10 +96,30 @@ pipeline {
 
     post {
         success {
-            githubNotify context: 'Jenkins/Build', status: 'SUCCESS', description: 'All tests passed!'
+            script {
+                try {
+                    step([$class: 'GitHubCommitStatusSetter',
+                        contextSource: [$class: 'DefaultCommitContextSource', context: 'Jenkins/Build'],
+                        statusResultSource: [$class: 'ConditionalStatusResultSource', 
+                            results: [[$class: 'AnyBuildResult', message: 'All tests passed!', state: 'SUCCESS']]]
+                    ])
+                } catch (Exception e) {
+                    echo "GitHub notification failed: ${e.message}"
+                }
+            }
         }
         failure {
-            githubNotify context: 'Jenkins/Build', status: 'FAILURE', description: 'Build failed, check logs.'
+            script {
+                try {
+                    step([$class: 'GitHubCommitStatusSetter',
+                        contextSource: [$class: 'DefaultCommitContextSource', context: 'Jenkins/Build'],
+                        statusResultSource: [$class: 'ConditionalStatusResultSource', 
+                            results: [[$class: 'AnyBuildResult', message: 'Build failed, check logs.', state: 'FAILURE']]]
+                    ])
+                } catch (Exception e) {
+                    echo "GitHub notification failed: ${e.message}"
+                }
+            }
         }
         always {
             cleanWs()
