@@ -16,15 +16,25 @@ pipeline {
             steps {
                 script {
                     try {
-                        // Notify GitHub that the build is starting
-                        step([$class: 'GitHubCommitStatusSetter',
-                            reposSource: [$class: 'StaticRepoSource', repoNames: ['Mohamedsaied8/roaya']],
-                            contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
-                            statusResultSource: [$class: 'ConditionalStatusResultSource', 
-                                results: [[$class: 'AnyBuildResult', message: 'Build is in progress...', state: 'PENDING']]]
-                        ])
+                        // Use publishChecks which is available in your Jenkins installation
+                        publishChecks name: "Jenkins/Build", 
+                                      title: "Build in Progress", 
+                                      summary: "The Roaya pipeline has started.", 
+                                      status: "IN_PROGRESS",
+                                      conclusion: "NONE"
                     } catch (Exception e) {
-                        echo "GitHub notification failed: ${e.message}"
+                        echo "GitHub Checks notification failed: ${e.message}"
+                        // Fallback to older status setter if Checks plugin is misconfigured
+                        try {
+                            step([$class: 'GitHubCommitStatusSetter',
+                                reposSource: [$class: 'StaticRepoSource', repoNames: ['Mohamedsaied8/roaya']],
+                                contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
+                                statusResultSource: [$class: 'ConditionalStatusResultSource', 
+                                    results: [[$class: 'AnyBuildResult', message: 'Build is in progress...', state: 'PENDING']]]
+                            ])
+                        } catch (Exception e2) {
+                            echo "Traditional GitHub Status notification also failed: ${e2.message}"
+                        }
                     }
                 }
             }
@@ -99,28 +109,26 @@ pipeline {
         success {
             script {
                 try {
-                    step([$class: 'GitHubCommitStatusSetter',
-                        reposSource: [$class: 'StaticRepoSource', repoNames: ['Mohamedsaied8/roaya']],
-                        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
-                        statusResultSource: [$class: 'ConditionalStatusResultSource', 
-                            results: [[$class: 'AnyBuildResult', message: 'All tests passed!', state: 'SUCCESS']]]
-                    ])
+                    publishChecks name: "Jenkins/Build", 
+                                  title: "Build Success", 
+                                  summary: "All tests passed successfully!", 
+                                  status: "COMPLETED",
+                                  conclusion: "SUCCESS"
                 } catch (Exception e) {
-                    echo "GitHub notification failed: ${e.message}"
+                    echo "GitHub Checks notification failed: ${e.message}"
                 }
             }
         }
         failure {
             script {
                 try {
-                    step([$class: 'GitHubCommitStatusSetter',
-                        reposSource: [$class: 'StaticRepoSource', repoNames: ['Mohamedsaied8/roaya']],
-                        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
-                        statusResultSource: [$class: 'ConditionalStatusResultSource', 
-                            results: [[$class: 'AnyBuildResult', message: 'Build failed, check logs.', state: 'FAILURE']]]
-                    ])
+                    publishChecks name: "Jenkins/Build", 
+                                  title: "Build Failure", 
+                                  summary: "The build or tests failed. Please check the logs.", 
+                                  status: "COMPLETED",
+                                  conclusion: "FAILURE"
                 } catch (Exception e) {
-                    echo "GitHub notification failed: ${e.message}"
+                    echo "GitHub Checks notification failed: ${e.message}"
                 }
             }
         }
