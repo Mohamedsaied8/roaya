@@ -9,52 +9,20 @@ pipeline {
 
     environment {
         BACKEND_BUILD_DIR = "backend/build"
+        // Replace with your GitHub owner/repo
+        REPO_NAME = "Mohamedsaied8/roaya"
     }
 
     stages {
         stage('Initialize') {
             steps {
                 script {
-                    // 1. Try modern Checks API (if GitHub App is configured)
-                    try {
-                        publishChecks(
-                            name: 'Jenkins/Build',
-                            status: 'IN_PROGRESS',
-                            title: 'Build Started',
-                            summary: 'Wait for build and tests to complete...'
-                        )
-                    } catch (Exception e) {
-                        echo "Checks API failed: ${e.message}"
-                    }
-
-                    // 2. Try Pull Request specific status (if PR Builder plugin is used)
-                    try {
-                        if (env.CHANGE_ID) {
-                            setGitHubPullRequestStatus(
-                                context: 'Jenkins/Build',
-                                message: 'Build is in progress...',
-                                state: 'pending'
-                            )
-                        }
-                    } catch (Exception e) {
-                        echo "PR Status set failed: ${e.message}"
-                    }
-
-                    // 3. Fallback to Traditional Status (Status icon)
-                    try {
-                        step([$class: 'GitHubCommitStatusSetter',
-                            contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
-                            errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
-                            reposSource: [$class: 'AnyRepoSource'],
-                            statusBackfillSource: [$class: 'DiscreteStatusBackfillSource'],
-                            statusResultSource: [
-                                $class: 'ConditionalStatusResultSource',
-                                results: [[$class: 'AnyBuildResult', message: 'Build is in progress...', state: 'PENDING']]
-                            ]
-                        ])
-                    } catch (Exception e) {
-                        echo "Traditional Status notification failed: ${e.message}"
-                    }
+                    // Try to notify GitHub that the build has started
+                    notifyGitHub('pending', 'Build Started', 'Wait for build and tests to complete...')
+                    
+                    // Standard plugin attempts (in case they start working)
+                    try { publishChecks(name: 'Jenkins/Build', status: 'IN_PROGRESS', title: 'Build Started') } catch (e) {}
+                    try { if (env.CHANGE_ID) { setGitHubPullRequestStatus(context: 'Jenkins/Build', message: 'Building...', state: 'pending') } } catch (e) {}
                 }
             }
         }
@@ -109,98 +77,50 @@ pipeline {
                 }
             }
         }
-
-        stage('Integration Testing') {
-            steps {
-                echo 'Running integration tests...'
-                // Add integration tests once environment is ready
-            }
-        }
-
-        stage('Acceptance Testing') {
-            steps {
-                echo 'Running E2E tests via Playwright...'
-                // Add Playwright tests here
-            }
-        }
     }
 
     post {
         success {
             script {
-                try {
-                    publishChecks(
-                        name: 'Jenkins/Build',
-                        status: 'COMPLETED',
-                        conclusion: 'SUCCESS',
-                        title: 'All Tests Passed',
-                        summary: 'Pipeline finished successfully.'
-                    )
-                } catch (Exception e) {}
-
-                try {
-                    if (env.CHANGE_ID) {
-                        setGitHubPullRequestStatus(
-                            context: 'Jenkins/Build',
-                            message: 'All tests passed!',
-                            state: 'success'
-                        )
-                    }
-                } catch (Exception e) {}
-
-                try {
-                    step([$class: 'GitHubCommitStatusSetter',
-                        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
-                        errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
-                        reposSource: [$class: 'AnyRepoSource'],
-                        statusBackfillSource: [$class: 'DiscreteStatusBackfillSource'],
-                        statusResultSource: [
-                            $class: 'ConditionalStatusResultSource',
-                            results: [[$class: 'AnyBuildResult', message: 'All tests passed!', state: 'SUCCESS']]
-                        ]
-                    ])
-                } catch (Exception e) {}
+                notifyGitHub('success', 'Passed', 'All tests completed successfully.')
             }
         }
         failure {
             script {
-                try {
-                    publishChecks(
-                        name: 'Jenkins/Build',
-                        status: 'COMPLETED',
-                        conclusion: 'FAILURE',
-                        title: 'Build Failed',
-                        summary: 'Check Jenkins logs for details.'
-                    )
-                } catch (Exception e) {}
-
-                try {
-                    if (env.CHANGE_ID) {
-                        setGitHubPullRequestStatus(
-                            context: 'Jenkins/Build',
-                            message: 'Build failed, check logs.',
-                            state: 'failure'
-                        )
-                    }
-                } catch (Exception e) {}
-
-                try {
-                    step([$class: 'GitHubCommitStatusSetter',
-                        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
-                        errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
-                        reposSource: [$class: 'AnyRepoSource'],
-                        statusBackfillSource: [$class: 'DiscreteStatusBackfillSource'],
-                        statusResultSource: [
-                            $class: 'ConditionalStatusResultSource',
-                            results: [[$class: 'AnyBuildResult', message: 'Build failed, check logs.', state: 'FAILURE']]
-                        ]
-                    ])
-                } catch (Exception e) {}
+                notifyGitHub('failure', 'Failed', 'Build or tests failed. Check Jenkins logs.')
             }
         }
         always {
             cleanWs()
             echo 'Pipeline finished.'
+        }
+    }
+}
+
+// Helper function to notify GitHub via API directly (very robust)
+def notifyGitHub(state, title, summary) {
+    try {
+        // Fallback 1: GitHubCommitStatusSetter (Status Icon)
+        step([$class: 'GitHubCommitStatusSetter',
+            contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
+            reposSource: [$class: 'AnyRepoSource'],
+            statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: summary, state: state.toUpperCase()]]]
+        ])
+    } catch (e) {
+        echo "Plugin notification failed: ${e.message}. Trying direct API..."
+        
+        // Fallback 2: Direct API call via curl if a GITHUB_TOKEN credential exists
+        try {
+            withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
+                sh """
+                    curl -X POST -H "Authorization: token ${TOKEN}" \
+                         -H "Accept: application/vnd.github.v3+json" \
+                         https://api.github.com/repos/${env.REPO_NAME}/statuses/${env.GIT_COMMIT} \
+                         -d '{"state": "${state}", "target_url": "${env.BUILD_URL}", "description": "${summary}", "context": "Jenkins/Build"}'
+                """
+            }
+        } catch (err) {
+            echo "Direct API notification failed: ${err.message}. Please ensure a Secret Text credential 'GITHUB_TOKEN' exists."
         }
     }
 }
