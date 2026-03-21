@@ -245,6 +245,7 @@ if(BUILD_TESTS)
         tests/unit/test_concurrency.cpp
         tests/unit/test_task_queue.cpp
         tests/unit/test_worker_thread.cpp
+        tests/unit/test_participant.cpp
     )
     target_link_libraries(unit_tests PRIVATE roaya_lib GTest::gtest_main GTest::gmock GTest::gmock_main)
     include(GoogleTest)
