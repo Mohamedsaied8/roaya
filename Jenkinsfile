@@ -12,6 +12,12 @@ pipeline {
     }
 
     stages {
+        stage('Initialize') {
+            steps {
+                githubNotify context: 'Jenkins/Build', status: 'PENDING', description: 'Build is in progress...'
+            }
+        }
+
         stage('Build') {
             parallel {
                 stage('Backend') {
@@ -79,10 +85,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline succeeded."
+            githubNotify context: 'Jenkins/Build', status: 'SUCCESS', description: 'All tests passed!'
         }
         failure {
-            echo "Pipeline failed."
+            githubNotify context: 'Jenkins/Build', status: 'FAILURE', description: 'Build failed, check logs.'
         }
         always {
             cleanWs()
