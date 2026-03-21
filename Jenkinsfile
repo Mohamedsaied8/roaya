@@ -25,7 +25,8 @@ pipeline {
                     }
                     steps {
                         dir('frontend') {
-                            sh "npm install"
+                            sh "rm -rf node_modules"
+                            sh "npm ci --prefer-offline --no-audit"
                             sh "npm run build"
                         }
                     }
@@ -51,6 +52,8 @@ pipeline {
                     }
                     steps {
                         dir('frontend') {
+                            // Ensure dependencies are present for testing
+                            sh "npm ci --prefer-offline --no-audit"
                             sh "npm test"
                         }
                     }
