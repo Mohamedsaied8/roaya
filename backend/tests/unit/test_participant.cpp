@@ -58,7 +58,7 @@ TEST_F(ParticipantTest, ToJsonContainsAllFields) {
     EXPECT_EQ(json["id"], "p-123");
     EXPECT_EQ(json["name"], "Alice");
     EXPECT_EQ(json["userId"], "user-1");
-    EXPECT_EQ(json["role"], "CO_HOST");
+    EXPECT_EQ(json["role"], "co_host");
     EXPECT_FALSE(json["audioMuted"]);
     EXPECT_TRUE(json["videoMuted"]);
     EXPECT_FALSE(json["screenSharing"]);
