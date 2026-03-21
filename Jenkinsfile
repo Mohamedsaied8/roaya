@@ -109,9 +109,9 @@ def notifyGitHub(state, title, summary) {
     } catch (e) {
         echo "Plugin notification failed: ${e.message}. Trying direct API..."
         
-        // Fallback 2: Direct API call via curl if a GITHUB_TOKEN credential exists
+        // Fallback 2: Direct API call via curl if a github_token_id credential exists
         try {
-            withCredentials([string(credentialsId: 'GITHUB_TOKEN', variable: 'TOKEN')]) {
+            withCredentials([string(credentialsId: 'github_token_id', variable: 'TOKEN')]) {
                 sh """
                     curl -X POST -H "Authorization: token ${TOKEN}" \
                          -H "Accept: application/vnd.github.v3+json" \
