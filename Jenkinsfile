@@ -45,8 +45,8 @@ pipeline {
                     }
                     steps {
                         dir('frontend') {
-                            sh 'npm ci --prefer-offline --no-audit'
-                            sh 'npm run build'
+                            sh 'export HOME=$WORKSPACE && npm ci --cache .npm-cache --prefer-offline --no-audit'
+                            sh 'export HOME=$WORKSPACE && npm run build'
                         }
                     }
                 }
@@ -71,7 +71,7 @@ pipeline {
                     }
                     steps {
                         dir('frontend') {
-                            sh 'npm test'
+                            sh 'export HOME=$WORKSPACE && npm test'
                         }
                     }
                 }
@@ -103,7 +103,7 @@ def notifyGitHub(state, title, summary) {
         // Fallback 1: GitHubCommitStatusSetter (Status Icon)
         step([$class: 'GitHubCommitStatusSetter',
             contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
-            reposSource: [$class: 'AnyRepoSource'],
+            reposSource: [$class: 'GitHubDefaultRepoSource'],
             statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: summary, state: state.toUpperCase()]]]
         ])
     } catch (e) {
