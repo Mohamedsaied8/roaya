@@ -1,5 +1,12 @@
 pipeline {
     agent any
+    
+    options {
+        cleanWs()
+        timeout(time: 1, unit: 'HOURS')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+    }
 
     environment {
         // Paths for build
@@ -25,7 +32,6 @@ pipeline {
                     }
                     steps {
                         dir('frontend') {
-                            sh "rm -rf node_modules"
                             sh "npm ci --prefer-offline --no-audit"
                             sh "npm run build"
                         }
