@@ -15,26 +15,45 @@ pipeline {
         stage('Initialize') {
             steps {
                 script {
+                    // 1. Try modern Checks API (if GitHub App is configured)
                     try {
-                        // Use publishChecks which is available in your Jenkins installation
-                        publishChecks name: "Jenkins/Build", 
-                                      title: "Build in Progress", 
-                                      summary: "The Roaya pipeline has started.", 
-                                      status: "IN_PROGRESS",
-                                      conclusion: "NONE"
+                        publishChecks(
+                            name: 'Jenkins/Build',
+                            status: 'IN_PROGRESS',
+                            title: 'Build Started',
+                            summary: 'Wait for build and tests to complete...'
+                        )
                     } catch (Exception e) {
-                        echo "GitHub Checks notification failed: ${e.message}"
-                        // Fallback to older status setter if Checks plugin is misconfigured
-                        try {
-                            step([$class: 'GitHubCommitStatusSetter',
-                                reposSource: [$class: 'StaticRepoSource', repoNames: ['Mohamedsaied8/roaya']],
-                                contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
-                                statusResultSource: [$class: 'ConditionalStatusResultSource', 
-                                    results: [[$class: 'AnyBuildResult', message: 'Build is in progress...', state: 'PENDING']]]
-                            ])
-                        } catch (Exception e2) {
-                            echo "Traditional GitHub Status notification also failed: ${e2.message}"
+                        echo "Checks API failed: ${e.message}"
+                    }
+
+                    // 2. Try Pull Request specific status (if PR Builder plugin is used)
+                    try {
+                        if (env.CHANGE_ID) {
+                            setGitHubPullRequestStatus(
+                                context: 'Jenkins/Build',
+                                message: 'Build is in progress...',
+                                state: 'pending'
+                            )
                         }
+                    } catch (Exception e) {
+                        echo "PR Status set failed: ${e.message}"
+                    }
+
+                    // 3. Fallback to Traditional Status (Status icon)
+                    try {
+                        step([$class: 'GitHubCommitStatusSetter',
+                            contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
+                            errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
+                            reposSource: [$class: 'AnyRepoSource'],
+                            statusBackfillSource: [$class: 'DiscreteStatusBackfillSource'],
+                            statusResultSource: [
+                                $class: 'ConditionalStatusResultSource',
+                                results: [[$class: 'AnyBuildResult', message: 'Build is in progress...', state: 'PENDING']]
+                            ]
+                        ])
+                    } catch (Exception e) {
+                        echo "Traditional Status notification failed: ${e.message}"
                     }
                 }
             }
@@ -45,21 +64,21 @@ pipeline {
                 stage('Backend') {
                     steps {
                         dir('backend') {
-                            sh "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j\$(nproc)"
+                            sh 'mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && nproc && make -j$(nproc)'
                         }
                     }
                 }
                 stage('Frontend') {
                     agent {
-                        docker { image 'node:20-bullseye-slim' }
-                    }
-                    environment {
-                        npm_config_cache = "npm-cache"
+                        docker {
+                            image 'node:20-bullseye-slim'
+                            reuseNode true
+                        }
                     }
                     steps {
                         dir('frontend') {
-                            sh "npm ci --prefer-offline --no-audit"
-                            sh "npm run build"
+                            sh 'npm ci --prefer-offline --no-audit'
+                            sh 'npm run build'
                         }
                     }
                 }
@@ -71,21 +90,20 @@ pipeline {
                 stage('Backend GoogleTests') {
                     steps {
                         dir('backend/build') {
-                            sh "./bin/unit_tests"
+                            sh './bin/unit_tests'
                         }
                     }
                 }
                 stage('Frontend Vitest') {
                     agent {
-                        docker { image 'node:20-bullseye-slim' }
-                    }
-                    environment {
-                        npm_config_cache = "npm-cache"
+                        docker {
+                            image 'node:20-bullseye-slim'
+                            reuseNode true
+                        }
                     }
                     steps {
                         dir('frontend') {
-                            sh "npm ci --prefer-offline --no-audit"
-                            sh "npm test"
+                            sh 'npm test'
                         }
                     }
                 }
@@ -94,13 +112,15 @@ pipeline {
 
         stage('Integration Testing') {
             steps {
-                echo "Running integration tests..."
+                echo 'Running integration tests...'
+                // Add integration tests once environment is ready
             }
         }
 
         stage('Acceptance Testing') {
             steps {
-                echo "Running E2E tests via Playwright..."
+                echo 'Running E2E tests via Playwright...'
+                // Add Playwright tests here
             }
         }
     }
@@ -109,32 +129,78 @@ pipeline {
         success {
             script {
                 try {
-                    publishChecks name: "Jenkins/Build", 
-                                  title: "Build Success", 
-                                  summary: "All tests passed successfully!", 
-                                  status: "COMPLETED",
-                                  conclusion: "SUCCESS"
-                } catch (Exception e) {
-                    echo "GitHub Checks notification failed: ${e.message}"
-                }
+                    publishChecks(
+                        name: 'Jenkins/Build',
+                        status: 'COMPLETED',
+                        conclusion: 'SUCCESS',
+                        title: 'All Tests Passed',
+                        summary: 'Pipeline finished successfully.'
+                    )
+                } catch (Exception e) {}
+
+                try {
+                    if (env.CHANGE_ID) {
+                        setGitHubPullRequestStatus(
+                            context: 'Jenkins/Build',
+                            message: 'All tests passed!',
+                            state: 'success'
+                        )
+                    }
+                } catch (Exception e) {}
+
+                try {
+                    step([$class: 'GitHubCommitStatusSetter',
+                        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
+                        errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
+                        reposSource: [$class: 'AnyRepoSource'],
+                        statusBackfillSource: [$class: 'DiscreteStatusBackfillSource'],
+                        statusResultSource: [
+                            $class: 'ConditionalStatusResultSource',
+                            results: [[$class: 'AnyBuildResult', message: 'All tests passed!', state: 'SUCCESS']]
+                        ]
+                    ])
+                } catch (Exception e) {}
             }
         }
         failure {
             script {
                 try {
-                    publishChecks name: "Jenkins/Build", 
-                                  title: "Build Failure", 
-                                  summary: "The build or tests failed. Please check the logs.", 
-                                  status: "COMPLETED",
-                                  conclusion: "FAILURE"
-                } catch (Exception e) {
-                    echo "GitHub Checks notification failed: ${e.message}"
-                }
+                    publishChecks(
+                        name: 'Jenkins/Build',
+                        status: 'COMPLETED',
+                        conclusion: 'FAILURE',
+                        title: 'Build Failed',
+                        summary: 'Check Jenkins logs for details.'
+                    )
+                } catch (Exception e) {}
+
+                try {
+                    if (env.CHANGE_ID) {
+                        setGitHubPullRequestStatus(
+                            context: 'Jenkins/Build',
+                            message: 'Build failed, check logs.',
+                            state: 'failure'
+                        )
+                    }
+                } catch (Exception e) {}
+
+                try {
+                    step([$class: 'GitHubCommitStatusSetter',
+                        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
+                        errorHandlers: [[$class: 'ShallowAnyErrorHandler']],
+                        reposSource: [$class: 'AnyRepoSource'],
+                        statusBackfillSource: [$class: 'DiscreteStatusBackfillSource'],
+                        statusResultSource: [
+                            $class: 'ConditionalStatusResultSource',
+                            results: [[$class: 'AnyBuildResult', message: 'Build failed, check logs.', state: 'FAILURE']]
+                        ]
+                    ])
+                } catch (Exception e) {}
             }
         }
         always {
             cleanWs()
-            echo "Pipeline finished."
+            echo 'Pipeline finished.'
         }
     }
 }
