@@ -1,15 +1,13 @@
 pipeline {
-    agent none
+    agent any
     
     options {
-        cleanWs()
         timeout(time: 1, unit: 'HOURS')
         buildDiscarder(logRotator(numToKeepStr: '10'))
         disableConcurrentBuilds()
     }
 
     environment {
-        // Paths for build
         BACKEND_BUILD_DIR = "backend/build"
     }
 
@@ -17,7 +15,6 @@ pipeline {
         stage('Build') {
             parallel {
                 stage('Backend') {
-                    agent any
                     steps {
                         dir('backend') {
                             sh "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j\$(nproc)"
@@ -44,7 +41,6 @@ pipeline {
         stage('Unit Testing') {
             parallel {
                 stage('Backend GoogleTests') {
-                    agent any
                     steps {
                         dir('backend/build') {
                             sh "./bin/unit_tests"
@@ -60,7 +56,6 @@ pipeline {
                     }
                     steps {
                         dir('frontend') {
-                            // Ensure dependencies are present for testing
                             sh "npm ci --prefer-offline --no-audit"
                             sh "npm test"
                         }
@@ -70,18 +65,14 @@ pipeline {
         }
 
         stage('Integration Testing') {
-            agent any
             steps {
                 echo "Running integration tests..."
-                // Placeholder for future docker-compose based integration tests
             }
         }
 
         stage('Acceptance Testing') {
-            agent any
             steps {
                 echo "Running E2E tests via Playwright..."
-                // Placeholder for Playwright tests
             }
         }
     }
@@ -94,6 +85,7 @@ pipeline {
             echo "Pipeline failed."
         }
         always {
+            cleanWs()
             echo "Pipeline finished."
         }
     }
