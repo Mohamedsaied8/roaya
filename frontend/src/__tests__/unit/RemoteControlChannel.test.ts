@@ -158,7 +158,7 @@ describe('RemoteControlChannel', () => {
 
   // DC-9: isOpen should return correct state
   it('DC-9: isOpen should return true only when channel readyState is "open"', () => {
-    const { pc, channel } = createMockPeerConnection()
+    const { pc, channel: _channel } = createMockPeerConnection()
     rc.openAsHost(pc)
 
     // Before onopen fires, readyState might be 'open' in our mock
