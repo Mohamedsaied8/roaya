@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
     Mic, MicOff, Video, VideoOff, Phone,
-    MessageSquare, Users, MonitorUp,
+    MessageSquare, Users, MonitorUp, MonitorX,
     Copy, Check, X
 } from 'lucide-react'
 import { useRoomStore } from '../store/useRoomStore'
@@ -10,6 +10,7 @@ import { signalingClient } from '../services/signaling/SignalingClient'
 import { mediaClient } from '../services/media/MediaClient'
 import { useMediaStore } from '../store/useMediaStore'
 import { VideoGrid } from '../components/Meeting/VideoGrid'
+import { useSFUMedia } from '../hooks/useSFUMedia'
 import type { Participant } from '../types/room'
 
 export default function RoomPage() {
@@ -35,7 +36,15 @@ export default function RoomPage() {
         addChatMessage,
     } = useRoomStore()
 
-    const { setLocalStream, removeRemoteStream } = useMediaStore()
+    const { setLocalStream } = useMediaStore()
+    const screenStreamRef = useRef<MediaStream | null>(null)
+
+    // SFU Media hook — drives the full mediasoup lifecycle
+    const sfuMedia = useSFUMedia(
+        roomId || '',
+        localParticipant?.id || '',
+        !!localParticipant?.id
+    )
 
     useEffect(() => {
         if (!roomId) return
@@ -86,17 +95,17 @@ export default function RoomPage() {
             }
         };
 
-        // Signaling handlers
+        // Handle participant joined — subscribe to their SFU producers
         const unsubscribeJoined = signalingClient.on('participant_joined', (msg) => {
             const participant = msg.payload as unknown as Participant;
             addParticipant(participant);
-            // In a real SFU, we would also trigger 'sfu_consume' here for their producers
+            sfuMedia.handleParticipantJoined(participant.id);
         });
 
         const unsubscribeLeft = signalingClient.on('participant_left', (msg) => {
             const participantId = msg.payload.participantId as string;
             removeParticipant(participantId);
-            removeRemoteStream(participantId);
+            sfuMedia.handleParticipantLeft(participantId);
         });
 
         const unsubscribeChat = signalingClient.on('chat_message', (msg) => {
@@ -149,15 +158,37 @@ export default function RoomPage() {
 
     const handleScreenShare = async () => {
         if (mediaState.screenSharing) {
-            // Stop screen share logic
-            setScreenSharing(false);
+            // Stop screen share
+            if (screenStreamRef.current) {
+                screenStreamRef.current.getTracks().forEach(t => t.stop())
+                screenStreamRef.current = null
+            }
+            setScreenSharing(false)
+            signalingClient.send('stop_screen_share', {}, { roomId })
         } else {
             try {
-                await navigator.mediaDevices.getDisplayMedia({ video: true });
-                // Produce screen track
-                setScreenSharing(true);
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: { echoCancellation: true, noiseSuppression: true },
+                })
+                screenStreamRef.current = screenStream
+                const screenTrack = screenStream.getVideoTracks()[0]
+
+                // Produce screen track via SFU
+                if (screenTrack) {
+                    await sfuMedia.shareScreen(screenTrack)
+                    // Auto-stop when user clicks browser's "Stop sharing" button
+                    screenTrack.onended = () => {
+                        setScreenSharing(false)
+                        screenStreamRef.current = null
+                        signalingClient.send('stop_screen_share', {}, { roomId })
+                    }
+                }
+
+                setScreenSharing(true)
+                signalingClient.send('start_screen_share', {}, { roomId })
             } catch (err) {
-                console.error('Screen share failed:', err);
+                console.error('Screen share failed:', err)
             }
         }
     };
@@ -291,9 +322,14 @@ export default function RoomPage() {
                 </button>
                 <button 
                     onClick={handleScreenShare}
-                    className="p-4 rounded-2xl bg-slate-800 text-white hover:bg-slate-700 transition-all duration-200"
+                    title={mediaState.screenSharing ? 'Stop screen share' : 'Share screen'}
+                    className={`p-4 rounded-2xl transition-all duration-200 ${
+                        mediaState.screenSharing 
+                            ? 'bg-purple-500 text-white hover:bg-purple-600' 
+                            : 'bg-slate-800 text-white hover:bg-slate-700'
+                    }`}
                 >
-                    <MonitorUp size={24} />
+                    {mediaState.screenSharing ? <MonitorX size={24} /> : <MonitorUp size={24} />}
                 </button>
                 
                 <div className="w-px h-8 bg-white/10 mx-2" />
