@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent none
     
     options {
         cleanWs()
@@ -17,6 +17,7 @@ pipeline {
         stage('Build') {
             parallel {
                 stage('Backend') {
+                    agent any
                     steps {
                         dir('backend') {
                             sh "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j\$(nproc)"
@@ -43,6 +44,7 @@ pipeline {
         stage('Unit Testing') {
             parallel {
                 stage('Backend GoogleTests') {
+                    agent any
                     steps {
                         dir('backend/build') {
                             sh "./bin/unit_tests"
@@ -68,6 +70,7 @@ pipeline {
         }
 
         stage('Integration Testing') {
+            agent any
             steps {
                 echo "Running integration tests..."
                 // Placeholder for future docker-compose based integration tests
@@ -75,6 +78,7 @@ pipeline {
         }
 
         stage('Acceptance Testing') {
+            agent any
             steps {
                 echo "Running E2E tests via Playwright..."
                 // Placeholder for Playwright tests
@@ -84,12 +88,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline succeeded. Updating GitHub status..."
-            step([$class: 'GitHubCommitStatusSetter', statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: 'Build finished successfully', state: 'SUCCESS']]]])
+            echo "Pipeline succeeded."
         }
         failure {
-            echo "Pipeline failed. Updating GitHub status..."
-            step([$class: 'GitHubCommitStatusSetter', statusResultSource: [$class: 'ConditionalStatusResultSource', results: [[$class: 'AnyBuildResult', message: 'Build failed', state: 'FAILURE']]]])
+            echo "Pipeline failed."
         }
         always {
             echo "Pipeline finished."
