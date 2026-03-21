@@ -18,7 +18,8 @@ pipeline {
                     try {
                         // Notify GitHub that the build is starting
                         step([$class: 'GitHubCommitStatusSetter',
-                            contextSource: [$class: 'DefaultCommitContextSource', context: 'Jenkins/Build'],
+                            reposSource: [$class: 'AnyRepoSource'],
+                            contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
                             statusResultSource: [$class: 'ConditionalStatusResultSource', 
                                 results: [[$class: 'AnyBuildResult', message: 'Build is in progress...', state: 'PENDING']]]
                         ])
@@ -99,7 +100,8 @@ pipeline {
             script {
                 try {
                     step([$class: 'GitHubCommitStatusSetter',
-                        contextSource: [$class: 'DefaultCommitContextSource', context: 'Jenkins/Build'],
+                        reposSource: [$class: 'AnyRepoSource'],
+                        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
                         statusResultSource: [$class: 'ConditionalStatusResultSource', 
                             results: [[$class: 'AnyBuildResult', message: 'All tests passed!', state: 'SUCCESS']]]
                     ])
@@ -112,7 +114,8 @@ pipeline {
             script {
                 try {
                     step([$class: 'GitHubCommitStatusSetter',
-                        contextSource: [$class: 'DefaultCommitContextSource', context: 'Jenkins/Build'],
+                        reposSource: [$class: 'AnyRepoSource'],
+                        contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: 'Jenkins/Build'],
                         statusResultSource: [$class: 'ConditionalStatusResultSource', 
                             results: [[$class: 'AnyBuildResult', message: 'Build failed, check logs.', state: 'FAILURE']]]
                     ])
