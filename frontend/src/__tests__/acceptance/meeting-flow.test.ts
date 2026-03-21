@@ -533,6 +533,7 @@ describe('WebRTCClient Peer Connections', () => {
 
     // AC-27: createOffer should create peer connection and return SDP offer
     it('AC-27: createOffer should produce a valid SDP offer', async () => {
+        await client.getUserMedia()
         const offer = await client.createOffer('participant-2')
 
         expect(globalThis.RTCPeerConnection).toHaveBeenCalled()
@@ -549,6 +550,7 @@ describe('WebRTCClient Peer Connections', () => {
 
     // AC-28: handleOffer should set remote description and return answer
     it('AC-28: handleOffer should create and return SDP answer', async () => {
+        await client.getUserMedia()
         const offer = { sdp: 'remote-offer-sdp', type: 'offer' as RTCSdpType }
         const answer = await client.handleOffer('participant-1', offer)
 

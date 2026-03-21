@@ -92,6 +92,12 @@ TEST_F(WebRTCSignalingTest, SdpOfferIsRoutedToTarget) {
 
   handler->handleMessage(hostConn, msg.toString());
 
+  // Manually process room messages
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
+
   // Verify Guest received the offer
   ASSERT_EQ(guestMessages.size(), 1);
   auto guestResp = nlohmann::json::parse(guestMessages.front());
@@ -116,6 +122,12 @@ TEST_F(WebRTCSignalingTest, SdpAnswerIsRoutedToTarget) {
 
   handler->handleMessage(guestConn, msg.toString());
 
+  // Manually process room messages
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
+
   // Verify Host received the answer
   ASSERT_EQ(hostMessages.size(), 1);
   auto hostResp = nlohmann::json::parse(hostMessages.front());
@@ -137,6 +149,12 @@ TEST_F(WebRTCSignalingTest, IceCandidateIsRoutedToTarget) {
   msg.payload = payload;
 
   handler->handleMessage(hostConn, msg.toString());
+
+  // Manually process room messages
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
 
   // Verify Guest received the ICE candidate
   ASSERT_EQ(guestMessages.size(), 1);

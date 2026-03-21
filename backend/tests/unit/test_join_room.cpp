@@ -147,6 +147,12 @@ TEST_F(JoinRoomTest, VerifyParticipantToConnectionMappingIsPopulated) {
   // Process and expect message dispatched to guestConn
   handler->handleMessage(hostConn, targetMsg.toString());
 
+  // Manually process room messages since we're not running the RoomManager loop
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
+
   ASSERT_EQ(guestMessages.size(), 2); // 1. room_joined, 2. the target msg
   auto dm = nlohmann::json::parse(guestMessages.back());
   EXPECT_EQ(dm["type"], "chat_message");

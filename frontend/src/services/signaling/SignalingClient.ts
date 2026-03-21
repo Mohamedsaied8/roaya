@@ -16,8 +16,14 @@ export class SignalingClient {
     private pingInterval: number | null = null
     private pendingRequests: Map<string, { resolve: (val: any) => void, reject: (err: any) => void, timeout: number }> = new Map()
 
-    constructor(url: string = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`) {
-        this.url = url
+    constructor(url?: string) {
+        if (url) {
+            this.url = url
+        } else {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+            const hostname = window.location.hostname || 'localhost'
+            this.url = `${protocol}//${hostname}:8081`
+        }
     }
 
     /**
