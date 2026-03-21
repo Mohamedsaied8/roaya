@@ -78,9 +78,13 @@ TEST_F(RoomControlsTest, MediaStateChangeBroadcastsUpdate) {
   msg.type = MessageType::MEDIA_STATE_CHANGE;
   msg.roomId = roomId;
   msg.senderId = hostConn->participantId;
-  msg.payload = payload;
-
   handler->handleMessage(hostConn, msg.toString());
+
+  // Manually process room messages
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
 
   // Guest should receive the update
   ASSERT_EQ(guestMessages.size(), 1);
@@ -90,7 +94,6 @@ TEST_F(RoomControlsTest, MediaStateChangeBroadcastsUpdate) {
   EXPECT_EQ(guestResp["payload"]["audioMuted"], true);
 
   // Verify Host's participant object was updated in the backend
-  auto room = RoomManager::getInstance().getRoom(roomId);
   auto participant = room->getParticipant(hostConn->participantId);
   EXPECT_TRUE(participant->isAudioMuted());
   EXPECT_FALSE(participant->isVideoMuted());
@@ -104,6 +107,12 @@ TEST_F(RoomControlsTest, ScreenShareStartStopsBroadcasts) {
   startMsg.senderId = hostConn->participantId;
 
   handler->handleMessage(hostConn, startMsg.toString());
+
+  // Manually process room messages
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
 
   ASSERT_EQ(guestMessages.size(), 1);
   auto guestResp = nlohmann::json::parse(guestMessages.back());
@@ -121,6 +130,12 @@ TEST_F(RoomControlsTest, ScreenShareStartStopsBroadcasts) {
   stopMsg.senderId = hostConn->participantId;
 
   handler->handleMessage(hostConn, stopMsg.toString());
+
+  // Manually process room messages
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
 
   ASSERT_EQ(guestMessages.size(), 2);
   auto guestResp2 = nlohmann::json::parse(guestMessages.back());
@@ -140,6 +155,12 @@ TEST_F(RoomControlsTest, ChatMessageBroadcastsToRoom) {
 
   handler->handleMessage(guestConn, msg.toString());
 
+  // Manually process room messages
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
+
   // Host should receive chat
   ASSERT_EQ(hostMessages.size(), 1);
   auto hostResp = nlohmann::json::parse(hostMessages.front());
@@ -152,9 +173,13 @@ TEST_F(RoomControlsTest, MuteAllBroadcastsToAllParticipants) {
   SignalingMessage msg;
   msg.type = MessageType::MUTE_ALL;
   msg.roomId = roomId;
-  msg.senderId = hostConn->participantId;
-
   handler->handleMessage(hostConn, msg.toString());
+
+  // Manually process room messages
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
 
   // Guest should receive participant_update with audioMuted=true
   ASSERT_EQ(guestMessages.size(), 1);

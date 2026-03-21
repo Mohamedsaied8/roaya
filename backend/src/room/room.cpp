@@ -184,6 +184,17 @@ void Room::handleMessage(const SignalingMessage &msg) {
     }
     break;
   }
+  case MessageType::MUTE_ALL: {
+    // Only host should be able to do this, but room doesn't check roles yet
+    // Broadcaster handles the actual message dispatching
+    for (auto& [id, p] : participants_) {
+      if (id != msg.senderId) {
+        p->setAudioMuted(true);
+      }
+    }
+    broadcast(msg, msg.senderId);
+    break;
+  }
   default:
     // Lifecycle messages (CREATE/JOIN/LEAVE) are handled in SignalingHandler synchronously
     break;

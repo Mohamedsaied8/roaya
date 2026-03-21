@@ -564,6 +564,7 @@ describe('WebRTCClient Peer Connections', () => {
     // AC-29: handleAnswer should set remote description on existing peer connection
     it('AC-29: handleAnswer should set remote description', async () => {
         // First create the peer connection via createOffer
+        await client.getUserMedia()
         await client.createOffer('participant-2')
 
         const answer = { sdp: 'remote-answer-sdp', type: 'answer' as RTCSdpType }
@@ -576,6 +577,7 @@ describe('WebRTCClient Peer Connections', () => {
 
     // AC-30: addIceCandidate should add candidate to correct peer connection
     it('AC-30: addIceCandidate should forward to correct peer connection', async () => {
+        await client.getUserMedia()
         await client.createOffer('participant-2')
 
         const candidate = {
@@ -593,6 +595,7 @@ describe('WebRTCClient Peer Connections', () => {
         const callback = vi.fn()
         client.onIceCandidate(callback)
 
+        await client.getUserMedia()
         await client.createOffer('participant-2')
 
         // Simulate ICE candidate event
@@ -607,6 +610,7 @@ describe('WebRTCClient Peer Connections', () => {
         const callback = vi.fn()
         client.onRemoteStream(callback)
 
+        await client.getUserMedia()
         await client.createOffer('participant-2')
 
         // Simulate remote track event
@@ -618,6 +622,7 @@ describe('WebRTCClient Peer Connections', () => {
 
     // AC-33: closePeerConnection should close and remove specific connection
     it('AC-33: closePeerConnection should close specific peer connection', async () => {
+        await client.getUserMedia()
         await client.createOffer('participant-2')
 
         client.closePeerConnection('participant-2')
@@ -628,6 +633,7 @@ describe('WebRTCClient Peer Connections', () => {
 
     // AC-34: cleanup should close all peer connections
     it('AC-34: cleanup should close all peer connections', async () => {
+        await client.getUserMedia()
         await client.createOffer('participant-2')
         await client.createOffer('participant-3')
 
