@@ -7,7 +7,6 @@ import {
 } from 'lucide-react'
 import { useRoomStore } from '../store/useRoomStore'
 import { signalingClient } from '../services/signaling/SignalingClient'
-import { mediaClient } from '../services/media/MediaClient'
 import { useMediaStore } from '../store/useMediaStore'
 import { VideoGrid } from '../components/Meeting/VideoGrid'
 import { useSFUMedia } from '../hooks/useSFUMedia'
@@ -36,66 +35,35 @@ export default function RoomPage() {
         addChatMessage,
     } = useRoomStore()
 
-    const { setLocalStream } = useMediaStore()
+    const { setLocalStream, localStream } = useMediaStore()
     const screenStreamRef = useRef<MediaStream | null>(null)
 
-    // SFU Media hook — drives the full mediasoup lifecycle
+    // SFU Media hook — drives the full mediasoup lifecycle once camera is ready
     const sfuMedia = useSFUMedia(
         roomId || '',
         localParticipant?.id || '',
-        !!localParticipant?.id
+        !!localParticipant?.id && !!localStream   // only enable when we have both IDs and a stream
     )
 
     useEffect(() => {
         if (!roomId) return
 
-        const initializeSFU = async () => {
+        // --- 1. Acquire camera/mic IMMEDIATELY (independent of SFU) ---
+        const acquireMedia = async () => {
             try {
-                // 1. Get Router RTP Capabilities
-                const res = await signalingClient.request('sfu_get_router_rtp_capabilities', {}, { roomId });
-                await mediaClient.loadDevice((res.payload as any).rtpCapabilities);
-
-                // 2. Create Send Transport
-                const sendRes = await signalingClient.request('sfu_create_webrtc_transport', { direction: 'send' }, { roomId });
-                await mediaClient.createSendTransport(
-                    (sendRes.payload as any).params, 
-                    async (prodData) => {
-                        const res = await signalingClient.request('sfu_produce', prodData, { roomId });
-                        return (res.payload as any).id;
-                    },
-                    async (connectData) => {
-                        await signalingClient.request('sfu_connect_webrtc_transport', connectData, { roomId });
-                    }
-                );
-
-                // 3. Create Recv Transport
-                const recvRes = await signalingClient.request('sfu_create_webrtc_transport', { direction: 'recv' }, { roomId });
-                await mediaClient.createRecvTransport(
-                    (recvRes.payload as any).params,
-                    async (connectData) => {
-                        await signalingClient.request('sfu_connect_webrtc_transport', connectData, { roomId });
-                    }
-                );
-
-                // 4. Start producing local media
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: mediaState.audioEnabled, 
-                    video: mediaState.videoEnabled 
-                });
-                setLocalStream(stream);
-                
-                for (const track of stream.getTracks()) {
-                    await mediaClient.produce(track);
-                }
-
-                // 5. Consume existing participants' streams (to be implemented)
-                console.log('SFU Media Initialized');
-            } catch (error) {
-                console.error('SFU Initialization failed:', error);
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: true,
+                })
+                setLocalStream(stream)
+            } catch (err) {
+                console.warn('getUserMedia failed (no camera/mic):', err)
+                // Still allow joining without camera — show avatar state
             }
-        };
+        }
+        acquireMedia()
 
-        // Handle participant joined — subscribe to their SFU producers
+        // --- 2. Signaling handlers ---
         const unsubscribeJoined = signalingClient.on('participant_joined', (msg) => {
             const participant = msg.payload as unknown as Participant;
             addParticipant(participant);
@@ -121,8 +89,6 @@ export default function RoomPage() {
 
         const unsubscribeEnd = signalingClient.on('end_meeting', () => handleLeaveRoom());
         const unsubscribeKick = signalingClient.on('kick_participant', () => handleLeaveRoom());
-
-        initializeSFU();
 
         return () => {
             unsubscribeJoined();

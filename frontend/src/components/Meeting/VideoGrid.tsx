@@ -33,8 +33,11 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ participants, localPartici
     'grid-cols-3 lg:grid-cols-4';
 
   return (
-    <div className="flex-1 p-4 overflow-y-auto bg-gray-950">
-      <div className={`grid gap-3 h-full ${gridClass}`}>
+    <div className="flex-1 flex flex-col p-4 bg-gray-950 min-h-0">
+      <div
+        className={`flex-1 grid gap-3 ${gridClass}`}
+        style={{ gridAutoRows: 'minmax(0, 1fr)' }}
+      >
         {/* Local Participant — always first */}
         <ParticipantVideo
           stream={localStream}
