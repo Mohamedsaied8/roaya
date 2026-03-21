@@ -78,6 +78,7 @@ TEST_F(RoomControlsTest, MediaStateChangeBroadcastsUpdate) {
   msg.type = MessageType::MEDIA_STATE_CHANGE;
   msg.roomId = roomId;
   msg.senderId = hostConn->participantId;
+  msg.payload = payload;
   handler->handleMessage(hostConn, msg.toString());
 
   // Manually process room messages
@@ -132,7 +133,7 @@ TEST_F(RoomControlsTest, ScreenShareStartStopsBroadcasts) {
   handler->handleMessage(hostConn, stopMsg.toString());
 
   // Manually process room messages
-  auto room = RoomManager::getInstance().getRoom(roomId);
+  room = RoomManager::getInstance().getRoom(roomId);
   if (room) {
     room->processMessages();
   }

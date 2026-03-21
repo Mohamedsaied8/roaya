@@ -529,6 +529,18 @@ describe('WebRTCClient Peer Connections', () => {
         globalThis.RTCPeerConnection = vi.fn(() => mockPc) as any
         globalThis.RTCSessionDescription = vi.fn((desc) => desc) as any
         globalThis.RTCIceCandidate = vi.fn((c) => c) as any
+        globalThis.MediaStream = vi.fn().mockImplementation(() => ({
+            getTracks: vi.fn().mockReturnValue([]),
+            getVideoTracks: vi.fn().mockReturnValue([]),
+            getAudioTracks: vi.fn().mockReturnValue([]),
+            addTrack: vi.fn(),
+            removeTrack: vi.fn(),
+        })) as any
+        globalThis.MediaStreamTrack = vi.fn().mockImplementation(() => ({
+            kind: 'video',
+            enabled: true,
+            stop: vi.fn(),
+        })) as any
     })
 
     // AC-27: createOffer should create peer connection and return SDP offer
@@ -614,10 +626,13 @@ describe('WebRTCClient Peer Connections', () => {
         await client.createOffer('participant-2')
 
         // Simulate remote track event
-        const fakeStream = { id: 'remote-stream-1' }
-        mockPc.ontrack({ streams: [fakeStream] })
+        const fakeTrack = { id: 'remote-track-1', kind: 'video' }
+        mockPc.ontrack({ track: fakeTrack })
 
-        expect(callback).toHaveBeenCalledWith('participant-2', fakeStream)
+        expect(callback).toHaveBeenCalledWith('participant-2', expect.objectContaining({
+            addTrack: expect.any(Function),
+            getTracks: expect.any(Function),
+        }))
     })
 
     // AC-33: closePeerConnection should close and remove specific connection

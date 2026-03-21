@@ -24,8 +24,7 @@ void WorkerThread::stop() {
   }
 
   stop_requested_ = true;
-  // The TaskQueue::stop() should be called externally if we want to wake up
-  // workers immediately
+  queue_.stop(); // Wake up worker if blocked on pop()
   if (thread_.joinable()) {
     thread_.join();
   }
