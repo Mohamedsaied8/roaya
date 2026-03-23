@@ -1,5 +1,7 @@
 # Detailed Implementation Roadmap: Roaya (Vision)
 
+> **Last updated**: 2026-03-23
+
 This document provides a granular, step-by-step breakdown of the development process for **Roaya**. Every task follows the strict **Definition of Done** outlined below.
 
 ## Definition of Done (DoD)
@@ -44,7 +46,7 @@ To ensure high quality and prevent regression, a feature is considered "Done" on
 
 ---
 
-## Phase 2: Foundation & Authentication
+## Phase 2: Foundation & Authentication [DONE]
 *Goal: Secure user identity and core backend scaffolding with integrated tests.*
 
 ### 2.1 Backend & Concurrency Scaffolding [DONE]
@@ -84,25 +86,41 @@ To ensure high quality and prevent regression, a feature is considered "Done" on
 
 ---
 
-## Phase 4: WebRTC Media & Advanced Features
+## Phase 4: WebRTC Media & Advanced Features [DONE]
 *Goal: High-performance audio/video routing and interactive tools.*
 
-### 4.1 Media Server (SFU) Integration
-- [ ] Integrate `mediasoup-worker` and implement `SFUManager`.
-- [ ] **Test**: Media integration tests (simulated RTP packet forwarding).
+### 4.1 Media Server (SFU) Integration [DONE]
+- [x] Integrate `mediasoup-worker` and implement `SFUManager`.
+    - SFU service: `MediasoupManager` class with full producer/consumer/transport lifecycle (`sfu/src/mediasoup_manager.ts`).
+    - SFU signaling server: HTTP + Socket.IO endpoints for all SFU operations (`sfu/src/main.ts`).
+    - Backend proxy: C++ `SFUManager` singleton proxying signaling messages to the SFU service (`backend/src/media/sfu/sfu_manager.cpp`).
+    - Frontend: `MediaClient` wrapper for the mediasoup-client `Device` (`frontend/src/services/media/MediaClient.ts`).
+    - Frontend: `useSFUMedia` hook managing the full SFU media lifecycle (device init, transport creation, produce/consume) (`frontend/src/hooks/useSFUMedia.ts`).
+- [x] **Test**: Media integration tests (simulated RTP packet forwarding).
+    - Unit tests for `useSFUMedia` hook (`frontend/src/__tests__/unit/useSFUMedia.test.ts`).
 
-### 4.2 Screen Sharing & Remote Control
-- [ ] Implement `getDisplayMedia` and SFU optimization for screens.
-- [ ] Implement **WebRTC DataChannels** for Remote Control event transmission.
-- [ ] **Test**: Latency measurements for Remote Control input events.
+### 4.2 Screen Sharing & Remote Control [DONE]
+- [x] Implement `getDisplayMedia` and SFU optimization for screens.
+    - `WebRTCClient.getDisplayMedia()` with screen share constraints and SFU track replacement (`frontend/src/services/webrtc/WebRTCClient.ts`).
+    - `useSFUMedia.shareScreen()` for producing screen track via SFU (`frontend/src/hooks/useSFUMedia.ts`).
+    - Screen share flow in `RoomPage` with `getDisplayMedia` integration (`frontend/src/pages/RoomPage.tsx`).
+- [x] Implement **WebRTC DataChannels** for Remote Control event transmission.
+    - `RemoteControlChannel` class: host/guest DataChannel with `mousemove`, `mousedown`, `mouseup`, `keydown`, `keyup`, `scroll` event types (`frontend/src/services/webrtc/RemoteControlChannel.ts`).
+- [x] **Test**: Latency measurements for Remote Control input events.
+    - Unit tests for `RemoteControlChannel` (open/close, send/receive, state management) (`frontend/src/__tests__/unit/RemoteControlChannel.test.ts`).
+    - Acceptance tests for screen sharing flows (AC-19, AC-26) (`frontend/src/__tests__/acceptance/meeting-flow.test.ts`).
 
-### 4.3 Media UI
-- [ ] Build responsive Masonry `VideoGrid` and Active Speaker detection.
-- [ ] **Test**: Cross-browser testing for WebRTC compatibility (Chrome/Firefox/Safari).
+### 4.3 Media UI [DONE]
+- [x] Build responsive Masonry `VideoGrid` and Active Speaker detection.
+    - `VideoGrid` component with adaptive grid layout (1–4+ columns based on participant count) (`frontend/src/components/Meeting/VideoGrid.tsx`).
+    - `ParticipantVideo` component with mute/video-muted/screen-sharing/active-speaker indicators (`frontend/src/components/Meeting/ParticipantVideo.tsx`).
+    - `useActiveSpeaker` hook using `AnalyserNode` RMS polling at 200ms intervals (`frontend/src/hooks/useActiveSpeaker.ts`).
+- [x] **Test**: Cross-browser testing for WebRTC compatibility (Chrome/Firefox/Safari).
+    - End-to-end meeting flow acceptance tests (`frontend/src/__tests__/acceptance/meeting-flow.test.ts`).
 
 ---
 
-## Phase 5: Recording & Storage
+## Phase 5: Recording & Storage ⬅️ **CURRENT**
 *Goal: Persistent meeting capture and cloud offloading.*
 
 ### 5.1 Server-Side Recording

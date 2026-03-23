@@ -1,0 +1,18 @@
+0 verbose cli /home/mohamed/.nvm/versions/node/v18.20.8/bin/node /home/mohamed/.nvm/versions/node/v18.20.8/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.8.2
+2 info using node@v18.20.8
+3 silly config load:file:/home/mohamed/.nvm/versions/node/v18.20.8/lib/node_modules/npm/npmrc
+4 silly config load:file:/media/mohamed/Robotics2/roaya/frontend/.npmrc
+5 silly config load:file:/media/mohamed/Robotics2/roaya/.npmrc
+6 silly config load:file:/media/mohamed/Robotics2/roaya/frontend/etc/npmrc
+7 verbose title npm exec tsc --noEmit
+8 verbose argv "exec" "--prefix" "frontend" "--" "tsc" "--noEmit"
+9 verbose logfile logs-max:10 dir:/media/mohamed/Robotics2/roaya/.npm/_logs/2026-03-21T19_41_18_436Z-
+10 verbose logfile /media/mohamed/Robotics2/roaya/.npm/_logs/2026-03-21T19_41_18_436Z-debug-0.log
+11 silly logfile done cleaning log files
+12 verbose cwd /media/mohamed/Robotics2/roaya
+13 verbose os Linux 6.8.0-106-generic
+14 verbose node v18.20.8
+15 verbose npm  v10.8.2
+16 verbose exit 1
+17 verbose code 1
