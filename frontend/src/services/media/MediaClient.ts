@@ -6,6 +6,20 @@ class MediaClient {
     private sendTransport: Transport | null = null;
     private recvTransport: Transport | null = null;
 
+    // A.4 — operations queue (Architecture §7 bug #2).
+    // Serializes offer/answer/produce/consume commands so we never start a
+    // new negotiation while `signalingState !== 'stable'`. Every mutation
+    // chains onto this promise; failures don't poison the chain.
+    private pendingOps: Promise<unknown> = Promise.resolve();
+
+    private enqueue<T>(op: () => Promise<T>): Promise<T> {
+        const next = this.pendingOps.then(op, op);
+        // Prevent unhandled rejection on the chain itself; callers still see
+        // their own error via the returned promise.
+        this.pendingOps = next.catch(() => undefined);
+        return next;
+    }
+
     async loadDevice(routerRtpCapabilities: any) {
         try {
             this.device = new Device();
@@ -67,13 +81,17 @@ class MediaClient {
     }
 
     async produce(track: MediaStreamTrack) {
-        if (!this.sendTransport) throw new Error('Send transport not initialized');
-        return await this.sendTransport.produce({ track });
+        return this.enqueue(async () => {
+            if (!this.sendTransport) throw new Error('Send transport not initialized');
+            return await this.sendTransport.produce({ track });
+        });
     }
 
     async consume(params: any) {
-        if (!this.recvTransport) throw new Error('Recv transport not initialized');
-        return await this.recvTransport.consume(params);
+        return this.enqueue(async () => {
+            if (!this.recvTransport) throw new Error('Recv transport not initialized');
+            return await this.recvTransport.consume(params);
+        });
     }
 }
 

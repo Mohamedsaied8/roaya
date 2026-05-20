@@ -19,5 +19,9 @@ backend/logs/
 .cache/
 *.idx
 
+# TLS certificates (local dev)
+certs/
+.env
+
 # OS files
 .DS_Store

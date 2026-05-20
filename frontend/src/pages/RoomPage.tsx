@@ -1,22 +1,26 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
     Mic, MicOff, Video, VideoOff, Phone,
-    MessageSquare, Users, MonitorUp,
-    Copy, Check, X
+    MessageSquare, Users, MonitorUp, MonitorX,
+    Copy, Check, X, Maximize, Minimize, LayoutGrid, Focus
 } from 'lucide-react'
 import { useRoomStore } from '../store/useRoomStore'
 import { signalingClient } from '../services/signaling/SignalingClient'
-import { mediaClient } from '../services/media/MediaClient'
 import { useMediaStore } from '../store/useMediaStore'
 import { VideoGrid } from '../components/Meeting/VideoGrid'
+import { useSFUMedia } from '../hooks/useSFUMedia'
 import type { Participant } from '../types/room'
+import { useAuthStore } from '../store/useAuthStore'
 
 export default function RoomPage() {
     const { roomId } = useParams<{ roomId: string }>()
     const navigate = useNavigate()
     const [copied, setCopied] = useState(false)
     const [isParticipantsOpen, setIsParticipantsOpen] = useState(false)
+    const [viewMode, setViewMode] = useState<'gallery' | 'spotlight'>('gallery')
+    const [isFullscreen, setIsFullscreen] = useState(false)
+    const roomContainerRef = useRef<HTMLDivElement>(null)
 
     const {
         room,
@@ -33,70 +37,124 @@ export default function RoomPage() {
         removeParticipant,
         clearRoom,
         addChatMessage,
+        updateParticipant,
     } = useRoomStore()
 
-    const { setLocalStream, removeRemoteStream } = useMediaStore()
+    const screenStreamRef = useRef<MediaStream | null>(null)
+
+    const [mediaReady, setMediaReady] = useState(false)
+
+    // SFU Media hook — drives the full mediasoup lifecycle
+    const sfuMedia = useSFUMedia(
+        roomId || '',
+        localParticipant?.id || '',
+        !!localParticipant?.id && mediaReady   // Only connect SFU AFTER permissions are resolved (whether granted or denied)
+    )
+
+    // Keep a ref to sfuMedia so signaling handlers always call the latest version.
+    // The useEffect([roomId]) captures sfuMedia at mount, but pollProducers/handleParticipantJoined
+    // are useCallbacks that change when participantId changes (after join). Without the ref,
+    // signaling handlers would call stale versions that have participantId = ''.
+    const sfuMediaRef = useRef(sfuMedia)
+    sfuMediaRef.current = sfuMedia
 
     useEffect(() => {
         if (!roomId) return
 
-        const initializeSFU = async () => {
-            try {
-                // 1. Get Router RTP Capabilities
-                const res = await signalingClient.request('sfu_get_router_rtp_capabilities', {}, { roomId });
-                await mediaClient.loadDevice((res.payload as any).rtpCapabilities);
-
-                // 2. Create Send Transport
-                const sendRes = await signalingClient.request('sfu_create_webrtc_transport', { direction: 'send' }, { roomId });
-                await mediaClient.createSendTransport(
-                    (sendRes.payload as any).params, 
-                    async (prodData) => {
-                        const res = await signalingClient.request('sfu_produce', prodData, { roomId });
-                        return (res.payload as any).id;
-                    },
-                    async (connectData) => {
-                        await signalingClient.request('sfu_connect_webrtc_transport', connectData, { roomId });
-                    }
-                );
-
-                // 3. Create Recv Transport
-                const recvRes = await signalingClient.request('sfu_create_webrtc_transport', { direction: 'recv' }, { roomId });
-                await mediaClient.createRecvTransport(
-                    (recvRes.payload as any).params,
-                    async (connectData) => {
-                        await signalingClient.request('sfu_connect_webrtc_transport', connectData, { roomId });
-                    }
-                );
-
-                // 4. Start producing local media
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    audio: mediaState.audioEnabled, 
-                    video: mediaState.videoEnabled 
-                });
-                setLocalStream(stream);
-                
-                for (const track of stream.getTracks()) {
-                    await mediaClient.produce(track);
-                }
-
-                // 5. Consume existing participants' streams (to be implemented)
-                console.log('SFU Media Initialized');
-            } catch (error) {
-                console.error('SFU Initialization failed:', error);
+        // --- 1. Acquire camera/mic IMMEDIATELY (independent of SFU) ---
+        const acquireMedia = async () => {
+            // Check if we are in a secure context (HTTPS/localhost)
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.warn('mediaDevices API not available! (Requires HTTPS or localhost)');
+                setMediaReady(true);
+                return;
             }
-        };
 
-        // Signaling handlers
+            // 30s timeout to allow user time to click 'Allow' on the permission prompt.
+            const timeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Camera/Microphone permission prompt timed out (30s)')), 30000),
+            )
+            try {
+                const stream = await Promise.race([
+                    navigator.mediaDevices.getUserMedia({ audio: true, video: true }),
+                    timeout,
+                ])
+                const ms = stream as MediaStream
+                const { audioEnabled, videoEnabled } = useRoomStore.getState().mediaState
+                ms.getAudioTracks().forEach(t => { t.enabled = audioEnabled })
+                ms.getVideoTracks().forEach(t => { t.enabled = videoEnabled })
+                useMediaStore.getState().setLocalStream(ms)
+            } catch (err) {
+                console.warn('getUserMedia failed (no camera/mic):', err)
+                if (typeof window !== 'undefined') {
+                    const reason = err instanceof Error ? err.message : 'unknown error'
+                    window.dispatchEvent(
+                        new CustomEvent('roaya:media-error', {
+                            detail: { reason, recoverable: true },
+                        }),
+                    )
+                }
+            } finally {
+                // Whether successful or denied, flag media check as complete so SFU can connect
+                setMediaReady(true)
+            }
+        }
+        acquireMedia()
+
+        // --- 1.5 Auto Join if missing State (Direct URL Navigation) ---
+        const autoJoin = async () => {
+            if (!room && roomId) {
+                const { isAuthenticated, setUser, user } = useAuthStore.getState()
+                const userName = user?.name || 'Guest User'
+                if (!isAuthenticated) {
+                    setUser({ id: `guest_${Date.now()}`, email: '', name: userName }, 'guest-token')
+                }
+                try {
+                    await signalingClient.connect()
+                    // If the URL has hyphens, it might be a meeting code, otherwise it's likely a roomId
+                    const isMeetingCode = roomId.includes('-');
+                    if (isMeetingCode) {
+                        signalingClient.send('join_room', {
+                            meetingCode: roomId,
+                            name: userName,
+                        })
+                    } else {
+                        // Rejoining using roomId directly in the base payload
+                        signalingClient.send('join_room', {
+                            name: userName,
+                        }, { roomId: roomId })
+                    }
+                } catch (e) {
+                    console.error('Auto-join failed:', e)
+                }
+            }
+        }
+        autoJoin()
+
+        // --- 2. Signaling handlers ---
+        const unsubscribeRoomJoined = signalingClient.on('room_joined', (msg) => {
+            const roomData = msg.payload as any
+            const lp = roomData.participants.find((p: any) => p.id === msg.senderId)
+            if (lp) useRoomStore.getState().setLocalParticipant(lp)
+            useRoomStore.getState().setRoom(roomData)
+        })
+
         const unsubscribeJoined = signalingClient.on('participant_joined', (msg) => {
             const participant = msg.payload as unknown as Participant;
             addParticipant(participant);
-            // In a real SFU, we would also trigger 'sfu_consume' here for their producers
+            sfuMediaRef.current.handleParticipantJoined(participant.id);
+        });
+
+        const unsubscribeUpdate = signalingClient.on('participant_update', (msg) => {
+            const participant = msg.payload as unknown as Participant;
+            updateParticipant(participant.id, participant);
+            sfuMediaRef.current.pollProducers();
         });
 
         const unsubscribeLeft = signalingClient.on('participant_left', (msg) => {
             const participantId = msg.payload.participantId as string;
             removeParticipant(participantId);
-            removeRemoteStream(participantId);
+            sfuMediaRef.current.handleParticipantLeft(participantId);
         });
 
         const unsubscribeChat = signalingClient.on('chat_message', (msg) => {
@@ -110,15 +168,38 @@ export default function RoomPage() {
             });
         });
 
+        const unsubscribeScreenStart = signalingClient.on('start_screen_share', (msg) => {
+            const senderId = msg.senderId || (msg.payload.participantId as string);
+            if (senderId) {
+                updateParticipant(senderId, { screenSharing: true });
+            }
+            sfuMediaRef.current.pollProducers();
+        });
+
+        const unsubscribeScreenStop = signalingClient.on('stop_screen_share', (msg) => {
+            const senderId = msg.senderId || (msg.payload.participantId as string);
+            if (senderId) {
+                updateParticipant(senderId, { screenSharing: false });
+                useMediaStore.getState().removeScreenStream(senderId);
+            }
+        });
+
+        const unsubscribeMediaState = signalingClient.on('media_state_change', () => {
+            sfuMediaRef.current.pollProducers();
+        });
+
         const unsubscribeEnd = signalingClient.on('end_meeting', () => handleLeaveRoom());
         const unsubscribeKick = signalingClient.on('kick_participant', () => handleLeaveRoom());
 
-        initializeSFU();
-
         return () => {
+            unsubscribeRoomJoined();
             unsubscribeJoined();
+            unsubscribeUpdate();
             unsubscribeLeft();
             unsubscribeChat();
+            unsubscribeScreenStart();
+            unsubscribeScreenStop();
+            unsubscribeMediaState();
             unsubscribeEnd();
             unsubscribeKick();
         };
@@ -126,38 +207,77 @@ export default function RoomPage() {
 
     const handleToggleAudio = async () => {
         toggleAudio();
+        const newEnabled = useRoomStore.getState().mediaState.audioEnabled;
         const stream = useMediaStore.getState().localStream;
+        signalingClient.send('media_state_change', { audioMuted: !newEnabled }, { roomId });
         if (stream) {
             const audioTrack = stream.getAudioTracks()[0];
             if (audioTrack) {
-                audioTrack.enabled = !mediaState.audioEnabled;
-                // In SFU, we could also pause the producer
+                audioTrack.enabled = newEnabled;
             }
+        }
+        if (newEnabled) {
+            sfuMedia.resumeAudio();
+        } else {
+            sfuMedia.pauseAudio();
         }
     };
 
     const handleToggleVideo = async () => {
         toggleVideo();
+        const newEnabled = useRoomStore.getState().mediaState.videoEnabled;
         const stream = useMediaStore.getState().localStream;
+        signalingClient.send('media_state_change', { videoMuted: !newEnabled }, { roomId });
         if (stream) {
             const videoTrack = stream.getVideoTracks()[0];
             if (videoTrack) {
-                videoTrack.enabled = !mediaState.videoEnabled;
+                videoTrack.enabled = newEnabled;
             }
+        }
+        if (newEnabled) {
+            sfuMedia.resumeVideo();
+        } else {
+            sfuMedia.pauseVideo();
         }
     };
 
+    const screenStreams = useMediaStore((s) => s.screenStreams)
+    const someoneElseSharing = screenStreams.size > 0 && !mediaState.screenSharing
+
     const handleScreenShare = async () => {
         if (mediaState.screenSharing) {
-            // Stop screen share logic
-            setScreenSharing(false);
+            if (screenStreamRef.current) {
+                screenStreamRef.current.getTracks().forEach(t => t.stop())
+                screenStreamRef.current = null
+            }
+            setScreenSharing(false)
+            signalingClient.send('stop_screen_share', {}, { roomId })
         } else {
+            // Only one participant can share at a time
+            if (useMediaStore.getState().screenStreams.size > 0) {
+                return
+            }
             try {
-                await navigator.mediaDevices.getDisplayMedia({ video: true });
-                // Produce screen track
-                setScreenSharing(true);
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: { echoCancellation: true, noiseSuppression: true },
+                })
+                screenStreamRef.current = screenStream
+                const screenTrack = screenStream.getVideoTracks()[0]
+
+                if (screenTrack) {
+                    await sfuMedia.shareScreen(screenTrack)
+                    screenTrack.onended = () => {
+                        setScreenSharing(false)
+                        screenStreamRef.current = null
+                        signalingClient.send('stop_screen_share', {}, { roomId })
+                    }
+                }
+
+                setScreenSharing(true)
+                signalingClient.send('start_screen_share', {}, { roomId })
             } catch (err) {
-                console.error('Screen share failed:', err);
+                console.error('Screen share failed:', err)
             }
         }
     };
@@ -170,15 +290,50 @@ export default function RoomPage() {
     }
 
     const handleCopyMeetingCode = () => {
-        if (room?.meetingCode) {
-            navigator.clipboard.writeText(room.meetingCode)
+        const joinCode = room?.meetingCode || roomId;
+        if (joinCode) {
+            const inviteLink = `${window.location.origin}/?join=${joinCode}`;
+            navigator.clipboard.writeText(inviteLink)
             setCopied(true)
             setTimeout(() => setCopied(false), 2000)
         }
     }
 
+    const toggleFullscreen = async () => {
+        if (!document.fullscreenElement) {
+            await roomContainerRef.current?.requestFullscreen()
+            setIsFullscreen(true)
+        } else {
+            await document.exitFullscreen()
+            setIsFullscreen(false)
+        }
+    }
+
+    // Clean up screen share on page unload (refresh / close tab).
+    // Without this, other participants see a frozen screen share after the broadcaster refreshes.
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (screenStreamRef.current) {
+                screenStreamRef.current.getTracks().forEach(t => t.stop())
+                screenStreamRef.current = null
+            }
+            if (useRoomStore.getState().mediaState.screenSharing) {
+                signalingClient.send('stop_screen_share', {}, { roomId })
+            }
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [roomId])
+
+    // Sync fullscreen state if user exits via Esc
+    useEffect(() => {
+        const handler = () => setIsFullscreen(!!document.fullscreenElement)
+        document.addEventListener('fullscreenchange', handler)
+        return () => document.removeEventListener('fullscreenchange', handler)
+    }, [])
+
     return (
-        <div className="h-screen flex flex-col bg-[#0f172a] text-slate-200">
+        <div ref={roomContainerRef} className="h-screen flex flex-col bg-[#0f172a] text-slate-200">
             {/* Header */}
             <header className="px-6 py-4 bg-slate-900/50 backdrop-blur-md border-b border-white/5 flex justify-between items-center">
                 <div>
@@ -187,14 +342,31 @@ export default function RoomPage() {
                     </h1>
                     <button
                         onClick={handleCopyMeetingCode}
+                        title="Copy invite link"
                         className="flex items-center gap-2 text-slate-400 text-sm hover:text-white transition-colors"
                     >
                         {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                        {room?.meetingCode || 'Loading...'}
+                        {room?.meetingCode || roomId || 'Loading...'}
                     </button>
                 </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-slate-400 text-sm bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                <div className="flex items-center gap-2">
+                    {/* View mode toggle */}
+                    <button
+                        onClick={() => setViewMode(v => v === 'gallery' ? 'spotlight' : 'gallery')}
+                        title={viewMode === 'gallery' ? 'Switch to spotlight' : 'Switch to gallery'}
+                        className="p-2 rounded-lg bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                        {viewMode === 'gallery' ? <Focus size={16} /> : <LayoutGrid size={16} />}
+                    </button>
+                    {/* Fullscreen toggle */}
+                    <button
+                        onClick={toggleFullscreen}
+                        title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                        className="p-2 rounded-lg bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                        {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+                    </button>
+                    <span className="text-slate-400 text-sm bg-white/5 px-3 py-1 rounded-full border border-white/5 ml-1">
                         {participants.length + 1} participants
                     </span>
                 </div>
@@ -202,7 +374,14 @@ export default function RoomPage() {
 
             {/* Main Content */}
             <div className="flex-1 flex overflow-hidden">
-                <VideoGrid participants={participants} />
+                <VideoGrid
+                  participants={participants}
+                  localParticipantId={localParticipant?.id || ''}
+                  localName={localParticipant?.name}
+                  viewMode={viewMode}
+                  isLocalAudioMuted={!mediaState.audioEnabled}
+                  isLocalVideoMuted={!mediaState.videoEnabled}
+                />
 
                 {/* Panels */}
                 {isParticipantsOpen && (
@@ -285,11 +464,19 @@ export default function RoomPage() {
                 >
                     {mediaState.videoEnabled ? <Video size={24} /> : <VideoOff size={24} />}
                 </button>
-                <button 
+                <button
                     onClick={handleScreenShare}
-                    className="p-4 rounded-2xl bg-slate-800 text-white hover:bg-slate-700 transition-all duration-200"
+                    disabled={someoneElseSharing}
+                    title={someoneElseSharing ? 'Another participant is sharing' : mediaState.screenSharing ? 'Stop screen share' : 'Share screen'}
+                    className={`p-4 rounded-2xl transition-all duration-200 ${
+                        someoneElseSharing
+                            ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
+                            : mediaState.screenSharing
+                                ? 'bg-purple-500 text-white hover:bg-purple-600'
+                                : 'bg-slate-800 text-white hover:bg-slate-700'
+                    }`}
                 >
-                    <MonitorUp size={24} />
+                    {mediaState.screenSharing ? <MonitorX size={24} /> : <MonitorUp size={24} />}
                 </button>
                 
                 <div className="w-px h-8 bg-white/10 mx-2" />

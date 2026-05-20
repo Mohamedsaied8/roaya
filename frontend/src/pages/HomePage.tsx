@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Video, Users, Shield, Zap, ArrowRight, Plus, LogIn } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
 import { useRoomStore } from '../store/useRoomStore'
@@ -7,7 +7,8 @@ import { signalingClient } from '../services/signaling/SignalingClient'
 
 export default function HomePage() {
     const navigate = useNavigate()
-    const { isAuthenticated, user, logout } = useAuthStore()
+    const [searchParams, setSearchParams] = useSearchParams()
+    const { isAuthenticated, user, logout, setUser } = useAuthStore()
     const { setRoom, setLocalParticipant } = useRoomStore()
     const [meetingCode, setMeetingCode] = useState('')
     const [roomName, setRoomName] = useState('')
@@ -18,14 +19,30 @@ export default function HomePage() {
     const [showCreateModal, setShowCreateModal] = useState(false)
 
     // Update userName when user changes (e.g. after login)
-    useState(() => {
+    useEffect(() => {
         if (user?.name) setUserName(user.name);
-    });
+    }, [user]);
+
+    // Handle deep link for joining a meeting
+    useEffect(() => {
+        const joinCode = searchParams.get('join');
+        if (joinCode) {
+            setMeetingCode(joinCode);
+            setShowJoinModal(true);
+            
+            // Remove the parameter from the URL after consuming it
+            searchParams.delete('join');
+            setSearchParams(searchParams, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const handleCreateRoom = async () => {
         if (!roomName.trim() || !userName.trim()) return
 
         setIsCreating(true)
+        if (!isAuthenticated) {
+            setUser({ id: `guest_${Date.now()}`, email: '', name: userName || 'Guest User' }, 'guest-token')
+        }
         try {
             await signalingClient.connect()
 
@@ -58,6 +75,9 @@ export default function HomePage() {
         if (!meetingCode.trim() || !userName.trim()) return
 
         setIsJoining(true)
+        if (!isAuthenticated) {
+            setUser({ id: `guest_${Date.now()}`, email: '', name: userName || 'Guest User' }, 'guest-token')
+        }
         try {
             await signalingClient.connect()
 

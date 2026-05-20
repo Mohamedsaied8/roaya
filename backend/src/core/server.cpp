@@ -70,7 +70,10 @@ bool Server::initialize(const std::string &configPath) {
   wsServer_ = std::make_unique<WebSocketServer>(config.getWebSocketPort());
   httpServer_ = std::make_unique<HttpServer>(config.getServerPort());
 
-  // TODO: Initialize SFU media server
+  // NOTE (A.3 decision b): the SFU (mediasoup) runs as a standalone Node
+  // service under sfu/. See docs/architecture_design.md §2.1 for the
+  // topology. This process proxies SFU signaling via SFUManager but does
+  // not own the media workers.
 
   LOG_INFO("Server initialization complete");
   return true;

@@ -189,6 +189,23 @@ TEST_F(RoomControlsTest, MuteAllBroadcastsToAllParticipants) {
   EXPECT_EQ(guestResp["senderId"], hostConn->participantId);
 }
 
+TEST_F(RoomControlsTest, MuteAllRejectedFromNonHost) {
+  SignalingMessage msg;
+  msg.type = MessageType::MUTE_ALL;
+  msg.roomId = roomId;
+  // Sent by guest, not host
+  handler->handleMessage(guestConn, msg.toString());
+
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  if (room) {
+    room->processMessages();
+  }
+
+  // No mute_all broadcast should have been delivered to any participant.
+  EXPECT_TRUE(hostMessages.empty());
+  EXPECT_TRUE(guestMessages.empty());
+}
+
 TEST_F(RoomControlsTest, KickParticipantRemovesThemAndBroadcasts) {
   nlohmann::json payload = {{"participantId", guestConn->participantId}};
 
@@ -209,6 +226,41 @@ TEST_F(RoomControlsTest, KickParticipantRemovesThemAndBroadcasts) {
   auto hostResp = nlohmann::json::parse(hostMessages.front());
   EXPECT_EQ(hostResp["type"], "participant_left");
   EXPECT_EQ(hostResp["payload"]["participantId"], guestConn->participantId);
+}
+
+// --- A.2 RBAC negatives -----------------------------------------------------
+
+TEST_F(RoomControlsTest, KickRejectedFromNonHost) {
+  nlohmann::json payload = {{"participantId", hostConn->participantId}};
+  SignalingMessage msg;
+  msg.type = MessageType::KICK_PARTICIPANT;
+  msg.roomId = roomId;
+  msg.payload = payload;
+  handler->handleMessage(guestConn, msg.toString());
+
+  // Guest should get an error; host should remain in the room
+  ASSERT_FALSE(guestMessages.empty());
+  auto resp = nlohmann::json::parse(guestMessages.back());
+  EXPECT_EQ(resp["type"], "error");
+
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  ASSERT_NE(room, nullptr);
+  EXPECT_NE(room->getParticipant(hostConn->participantId), nullptr);
+}
+
+TEST_F(RoomControlsTest, EndMeetingRejectedFromNonHost) {
+  SignalingMessage msg;
+  msg.type = MessageType::END_MEETING;
+  msg.roomId = roomId;
+  handler->handleMessage(guestConn, msg.toString());
+
+  ASSERT_FALSE(guestMessages.empty());
+  auto resp = nlohmann::json::parse(guestMessages.back());
+  EXPECT_EQ(resp["type"], "error");
+
+  // Room must still exist
+  auto room = RoomManager::getInstance().getRoom(roomId);
+  EXPECT_NE(room, nullptr);
 }
 
 TEST_F(RoomControlsTest, EndMeetingDeletesRoomAndNotifies) {

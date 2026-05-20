@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     zlib1g-dev \
     libpq-dev \
+    libhiredis-dev \
     pkg-config \
     python3 \
     && rm -rf /var/lib/apt/lists/*
@@ -31,6 +32,7 @@ RUN apt-get update && apt-get install -y \
     libssl3 \
     zlib1g \
     libpq5 \
+    libhiredis0.14 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
