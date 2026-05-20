@@ -134,6 +134,15 @@ void Room::processMessages() {
 }
 
 void Room::handleMessage(const SignalingMessage &msg) {
+  // Centralized RBAC gate (A.2): every privileged action flows through
+  // requiresHost(). If a non-host tries to invoke one, drop it before any
+  // state mutation or broadcast.
+  if (requiresHost(msg.type) && !isHost(msg.senderId)) {
+    LOG_WARN("RBAC reject: {} from non-host {} in room {}",
+             messageTypeToString(msg.type), msg.senderId, id_);
+    return;
+  }
+
   // Signal routing logic (WebRTC + custom events)
   switch (msg.type) {
   case MessageType::CHAT_MESSAGE: {
@@ -185,11 +194,15 @@ void Room::handleMessage(const SignalingMessage &msg) {
     break;
   }
   case MessageType::MUTE_ALL: {
-    // Only host should be able to do this, but room doesn't check roles yet
-    // Broadcaster handles the actual message dispatching
-    for (auto& [id, p] : participants_) {
-      if (id != msg.senderId) {
-        p->setAudioMuted(true);
+    // Host gate is enforced centrally via requiresHost() above.
+    // Scope the lock narrowly so Room::broadcast() (which also locks mutex_)
+    // can run afterward without deadlocking.
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      for (auto& [id, p] : participants_) {
+        if (id != msg.senderId) {
+          p->setAudioMuted(true);
+        }
       }
     }
     broadcast(msg, msg.senderId);

@@ -20,9 +20,17 @@ export class SignalingClient {
         if (url) {
             this.url = url
         } else {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+            const isSecure = window.location.protocol === 'https:'
+            const protocol = isSecure ? 'wss:' : 'ws:'
             const hostname = window.location.hostname || 'localhost'
-            this.url = `${protocol}//${hostname}:8081`
+            // In production/Docker, nginx proxies /ws → backend:8081.
+            // Over HTTPS, connect through nginx to get WSS for free.
+            // Over HTTP (localhost dev), connect directly to backend port 8081.
+            if (isSecure) {
+                this.url = `${protocol}//${hostname}:${window.location.port}/ws`
+            } else {
+                this.url = `${protocol}//${hostname}:8081`
+            }
         }
     }
 

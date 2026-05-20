@@ -71,6 +71,22 @@ enum class MessageType {
   UNKNOWN
 };
 
+/**
+ * RBAC helper — single source of truth for "host only" actions.
+ * Both SignalingHandler (lifecycle ops) and Room::handleMessage (in-room ops)
+ * MUST funnel privileged actions through requiresHost() so no path is missed.
+ */
+inline bool requiresHost(MessageType type) {
+  switch (type) {
+  case MessageType::KICK_PARTICIPANT:
+  case MessageType::END_MEETING:
+  case MessageType::MUTE_ALL:
+    return true;
+  default:
+    return false;
+  }
+}
+
 // Convert MessageType to string
 inline std::string messageTypeToString(MessageType type) {
   switch (type) {

@@ -136,22 +136,38 @@ void WebSocketServer::registerConnection(
 }
 
 void WebSocketServer::unregisterConnection(const std::string &connId) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::shared_ptr<WebSocketConnection> connToDisconnect;
+  std::string pId, rId;
 
-  auto it = connections_.find(connId);
-  if (it != connections_.end()) {
-    // Remove participant mapping
-    if (!it->second->participantId.empty()) {
-      participantToConnection_.erase(it->second->participantId);
-
-      // Leave room if in one
-      if (!it->second->roomId.empty()) {
-        RoomManager::getInstance().leaveRoom(it->second->roomId,
-                                             it->second->participantId);
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = connections_.find(connId);
+    if (it != connections_.end()) {
+      connToDisconnect = it->second;
+      if (!connToDisconnect->participantId.empty()) {
+        pId = connToDisconnect->participantId;
+        rId = connToDisconnect->roomId;
+        participantToConnection_.erase(pId);
       }
+      connections_.erase(it);
+      LOG_DEBUG("Connection unregistered: {}", connId);
     }
-    connections_.erase(it);
-    LOG_DEBUG("Connection unregistered: {}", connId);
+  }
+
+  // Perform broadcast outside the lock to prevent deadlock
+  if (connToDisconnect && !rId.empty()) {
+    RoomManager::getInstance().leaveRoom(rId, pId);
+    
+    // Broadcast participant_left to everyone else so they don't get ghost users
+    SignalingMessage broadcast;
+    broadcast.type = MessageType::PARTICIPANT_LEFT;
+    broadcast.roomId = rId;
+    broadcast.senderId = pId;
+    broadcast.payload = {{"participantId", pId}};
+    broadcast.timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+                             std::chrono::system_clock::now().time_since_epoch())
+                             .count();
+    this->broadcastToRoom(rId, broadcast.toString(), "");
   }
 }
 

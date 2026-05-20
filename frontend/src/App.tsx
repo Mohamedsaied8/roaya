@@ -3,6 +3,7 @@ import HomePage from './pages/HomePage'
 import RoomPage from './pages/RoomPage'
 import LoginPage from './pages/LoginPage'
 import { useAuthStore } from './store/useAuthStore'
+import MediaErrorToast from './components/common/MediaErrorToast'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -12,6 +13,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
     return (
         <BrowserRouter>
+            <MediaErrorToast />
             <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />

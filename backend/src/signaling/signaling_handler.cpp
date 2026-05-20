@@ -260,7 +260,14 @@ void SignalingHandler::handleKickParticipant(
     return;
 
   auto room = RoomManager::getInstance().getRoom(conn->roomId);
-  if (!room || room->getHostId() != conn->participantId) {
+  if (!room) {
+    sendError(conn, "Room not found");
+    return;
+  }
+  if (requiresHost(MessageType::KICK_PARTICIPANT) &&
+      !room->isHost(conn->participantId)) {
+    LOG_WARN("RBAC reject: KICK_PARTICIPANT from non-host {} in room {}",
+             conn->participantId, conn->roomId);
     sendError(conn, "Only host can kick participants");
     return;
   }
@@ -300,7 +307,14 @@ void SignalingHandler::handleEndMeeting(
     return;
 
   auto room = RoomManager::getInstance().getRoom(conn->roomId);
-  if (!room || room->getHostId() != conn->participantId) {
+  if (!room) {
+    sendError(conn, "Room not found");
+    return;
+  }
+  if (requiresHost(MessageType::END_MEETING) &&
+      !room->isHost(conn->participantId)) {
+    LOG_WARN("RBAC reject: END_MEETING from non-host {} in room {}",
+             conn->participantId, conn->roomId);
     sendError(conn, "Only host can end meeting");
     return;
   }

@@ -102,6 +102,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(libpqxx)
 
+# hiredis - synchronous Redis client (system package on Linux: libhiredis-dev).
+# We rely on the system library because hiredis is small, stable, and packaged
+# everywhere; FetchContent would needlessly rebuild it on every clean build.
+find_path(HIREDIS_INCLUDE_DIR hiredis/hiredis.h)
+find_library(HIREDIS_LIBRARY NAMES hiredis)
+if(NOT HIREDIS_INCLUDE_DIR OR NOT HIREDIS_LIBRARY)
+    message(FATAL_ERROR "hiredis not found. Install libhiredis-dev (Debian/Ubuntu) or hiredis-devel (RHEL).")
+endif()
+message(STATUS "Found hiredis: ${HIREDIS_LIBRARY}")
+
 # Manual argon2 target
 set(ARGON2_SOURCES
     ${argon2_SOURCE_DIR}/src/argon2.c
@@ -196,6 +206,7 @@ target_include_directories(roaya_lib PUBLIC
     ${usockets_SOURCE_DIR}/src
     ${httplib_SOURCE_DIR}
     ${argon2_SOURCE_DIR}/include
+    ${HIREDIS_INCLUDE_DIR}
 )
 
 target_link_libraries(roaya_lib PUBLIC
@@ -209,6 +220,7 @@ target_link_libraries(roaya_lib PUBLIC
     ZLIB::ZLIB
     pqxx
     argon2
+    ${HIREDIS_LIBRARY}
 )
 
 
@@ -246,6 +258,7 @@ if(BUILD_TESTS)
         tests/unit/test_task_queue.cpp
         tests/unit/test_worker_thread.cpp
         tests/unit/test_participant.cpp
+        tests/unit/test_sfu_manager.cpp
     )
     target_link_libraries(unit_tests PRIVATE roaya_lib GTest::gtest_main GTest::gmock GTest::gmock_main)
     include(GoogleTest)

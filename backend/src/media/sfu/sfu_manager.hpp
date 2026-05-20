@@ -3,6 +3,7 @@
 #include "signaling/message_types.hpp"
 #include <string>
 #include <functional>
+#include <nlohmann/json.hpp>
 
 namespace roaya {
 
@@ -23,6 +24,9 @@ public:
 private:
     SFUManager() = default;
     std::string sfuUrl_;
+
+    void buildResponse(const SignalingMessage& orig, const nlohmann::json& sfuResult,
+                       std::function<void(const SignalingMessage&)> callback);
     
     // Internal methods for specific SFU operations
     void getRouterRtpCapabilities(const std::string& roomId, 
@@ -32,6 +36,7 @@ private:
     void connectWebRtcTransport(const std::string& transportId, const nlohmann::json& dtlsParameters,
                                std::function<void(const nlohmann::json&)> callback);
     void produce(const std::string& transportId, const std::string& kind, const nlohmann::json& rtpParameters,
+                const std::string& participantId, const std::string& source,
                 std::function<void(const nlohmann::json&)> callback);
     void consume(const std::string& transportId, const std::string& producerId, const nlohmann::json& rtpCapabilities,
                 std::function<void(const nlohmann::json&)> callback);

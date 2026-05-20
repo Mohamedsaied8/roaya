@@ -6,6 +6,7 @@ export interface ProducerInfo {
   kind: 'audio' | 'video';
   roomId: string;
   participantId: string;
+  source?: string;
 }
 
 export class MediasoupManager {
@@ -103,11 +104,11 @@ export class MediasoupManager {
   private participantProducers: Map<string, Set<string>> = new Map();
   private participantTransports: Map<string, Set<string>> = new Map();
 
-  public async produce(transportId: string, kind: 'audio' | 'video', rtpParameters: any, participantId?: string): Promise<Producer> {
+  public async produce(transportId: string, kind: 'audio' | 'video', rtpParameters: any, participantId?: string, source?: string): Promise<Producer> {
     const transport = this.transports.get(transportId);
     if (!transport) throw new Error('Transport not found');
 
-    const producer = await transport.produce({ kind, rtpParameters, appData: { roomId: transport.appData.roomId, participantId } });
+    const producer = await transport.produce({ kind, rtpParameters, appData: { roomId: transport.appData.roomId, participantId, source: source || 'camera' } });
     this.producers.set(producer.id, producer);
 
     // Track producer for participant cleanup
@@ -186,6 +187,7 @@ export class MediasoupManager {
           kind: producer.kind as 'audio' | 'video',
           roomId: producer.appData.roomId as string,
           participantId: (producer.appData.participantId as string) || '',
+          source: (producer.appData.source as string) || 'camera',
         });
       }
     }

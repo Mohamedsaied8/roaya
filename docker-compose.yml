@@ -22,6 +22,9 @@ services:
       context: ./frontend
     ports:
       - "8082:80"
+      - "8443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
     depends_on:
       - backend
 
@@ -35,6 +38,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Migrations in this directory run in lexical order on first container
+      # start, so 001_initial_schema.sql then 002_rooms_sessions_recordings.sql.
+      - ./backend/scripts/migrations:/docker-entrypoint-initdb.d:ro
 
   redis:
     image: redis:7-alpine
@@ -49,7 +55,7 @@ services:
       - "41000-41100:41000-41100/tcp"
     environment:
       - NODE_ENV=development
-      - SFU_ANNOUNCED_IP=127.0.0.1
+      - SFU_ANNOUNCED_IP=${SFU_ANNOUNCED_IP:-127.0.0.1}
 
 volumes:
   postgres_data:

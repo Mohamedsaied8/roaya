@@ -42,10 +42,12 @@ The backend is written in C++ (C++17/20) using the `roaya::` namespace for all c
 *   **Constraints:** Stateful but isolated. Must synchronize via Redis if scaling horizontally.
 
 ### 4. Media Transceiver Module (SFU)
-*   **Purpose:** Route media packets from senders to receivers.
-*   **Responsibilities:** Process DTLS/SRTP handshakes, decode RTCP feedback (PLI/FIR), and duplicate RTP packets to multiple outbound subscriber streams based on active subscriptions.
-*   **Interfaces:** `addProducer(trackId)`, `addConsumer(producerId, peerId)`, `processIncomingPacket(rtp)`.
-*   **Constraints:** Strictly stateful and highly performance-sensitive.
+*   **Topology (2026-04-10 decision):** the SFU is a **standalone Node.js worker** under `sfu/`, running mediasoup 3.x. It is *not* embedded in the C++ process. The C++ `SFUManager` is a thin proxy that forwards signaling requests (get capabilities, create transport, produce, consume) from the WebSocket client to the SFU's HTTP + Socket.IO API.
+*   **Why standalone:** mediasoup ships a battle-tested Node supervision layer; the original plan to re-host it inside C++ would have duplicated that work for no latency win (media never touches the C++ process). Keeping the SFU in Node also lets us iterate on RTP/encoder tuning without rebuilding the C++ tree.
+*   **Security:** the SFU **must** be reachable only with a backend-issued JWT. `sfu/src/main.ts` runs a dependency-free HS256 verifier keyed by `ROAYA_JWT_SECRET` and enforces it on both HTTP (`Authorization: Bearer …`) and Socket.IO (`handshake.auth.token` / `?token=` query / `Authorization` header). Issuer must be `roaya` and `exp` is checked.
+*   **Responsibilities:** DTLS/SRTP handshakes, RTCP feedback (PLI/FIR), RTP forwarding to subscribers.
+*   **Interfaces:** `sfu_get_router_rtp_capabilities`, `sfu_create_webrtc_transport`, `sfu_connect_webrtc_transport`, `sfu_produce`, `sfu_consume`, `sfu_get_active_producers`, `sfu_close_producer`.
+*   **Constraints:** Stateful per router (one router per room), performance-sensitive, scales out by running multiple SFU workers behind a sticky load balancer.
 
 ### 5. Concurrency & Threading Strategy
 

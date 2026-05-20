@@ -19,11 +19,11 @@ export default defineConfig({
         port: 3000,
         proxy: {
             '/api': {
-                target: 'http://localhost:8080',
+                target: `http://localhost:${process.env.VITE_API_PORT || '9090'}`,
                 changeOrigin: true,
             },
             '/ws': {
-                target: 'ws://localhost:8081',
+                target: `ws://localhost:${process.env.VITE_WS_PORT || '8081'}`,
                 ws: true,
             },
         },

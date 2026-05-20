@@ -36,6 +36,9 @@ export type MessageType =
     | 'sfu_produce'
     | 'sfu_consume'
     | 'sfu_restart_ice'
+    | 'sfu_get_active_producers'
+    | 'sfu_close_producer'
+    | 'sfu_new_producer'
     | 'error';
 
 export interface SignalingMessage {

@@ -35,33 +35,52 @@ interface RoomState {
     toggleParticipants: () => void
 }
 
+function loadPersistedMediaState(): { audioEnabled: boolean; videoEnabled: boolean } {
+    try {
+        const raw = sessionStorage.getItem('roaya:mediaState')
+        if (raw) return JSON.parse(raw)
+    } catch { /* ignore */ }
+    return { audioEnabled: true, videoEnabled: true }
+}
+
+function persistMediaState(audioEnabled: boolean, videoEnabled: boolean) {
+    try {
+        sessionStorage.setItem('roaya:mediaState', JSON.stringify({ audioEnabled, videoEnabled }))
+    } catch { /* ignore */ }
+}
+
+const persisted = loadPersistedMediaState()
+
 export const useRoomStore = create<RoomState>((set) => ({
     room: null,
     participants: [],
     localParticipant: null,
     chatMessages: [],
     mediaState: {
-        audioEnabled: true,
-        videoEnabled: true,
+        audioEnabled: persisted.audioEnabled,
+        videoEnabled: persisted.videoEnabled,
         screenSharing: false,
     },
     isChatOpen: false,
     isParticipantsOpen: false,
 
     setRoom: (room) => set({ room, participants: room.participants }),
-    clearRoom: () => set({
-        room: null,
-        participants: [],
-        localParticipant: null,
-        chatMessages: [],
-        isChatOpen: false,
-        isParticipantsOpen: false,
-        mediaState: {
-            audioEnabled: true,
-            videoEnabled: true,
-            screenSharing: false,
-        },
-    }),
+    clearRoom: () => {
+        try { sessionStorage.removeItem('roaya:mediaState') } catch { /* ignore */ }
+        return set({
+            room: null,
+            participants: [],
+            localParticipant: null,
+            chatMessages: [],
+            isChatOpen: false,
+            isParticipantsOpen: false,
+            mediaState: {
+                audioEnabled: true,
+                videoEnabled: true,
+                screenSharing: false,
+            },
+        })
+    },
 
     setLocalParticipant: (participant) => set({ localParticipant: participant }),
 
@@ -84,13 +103,17 @@ export const useRoomStore = create<RoomState>((set) => ({
 
     setParticipants: (participants) => set({ participants }),
 
-    toggleAudio: () => set((state) => ({
-        mediaState: { ...state.mediaState, audioEnabled: !state.mediaState.audioEnabled },
-    })),
+    toggleAudio: () => set((state) => {
+        const newAudio = !state.mediaState.audioEnabled
+        persistMediaState(newAudio, state.mediaState.videoEnabled)
+        return { mediaState: { ...state.mediaState, audioEnabled: newAudio } }
+    }),
 
-    toggleVideo: () => set((state) => ({
-        mediaState: { ...state.mediaState, videoEnabled: !state.mediaState.videoEnabled },
-    })),
+    toggleVideo: () => set((state) => {
+        const newVideo = !state.mediaState.videoEnabled
+        persistMediaState(state.mediaState.audioEnabled, newVideo)
+        return { mediaState: { ...state.mediaState, videoEnabled: newVideo } }
+    }),
 
     setScreenSharing: (sharing) => set((state) => ({
         mediaState: { ...state.mediaState, screenSharing: sharing },

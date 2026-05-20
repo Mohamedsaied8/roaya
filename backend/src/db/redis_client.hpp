@@ -7,6 +7,9 @@
 #include <string>
 #include <unordered_map>
 
+// Forward-declare the hiredis context so the header doesn't pull in <hiredis/hiredis.h>.
+struct redisContext;
+
 namespace roaya {
 
 /**
@@ -62,12 +65,23 @@ public:
 
 private:
   RedisClient() = default;
+  ~RedisClient();
+  RedisClient(const RedisClient &) = delete;
+  RedisClient &operator=(const RedisClient &) = delete;
 
   bool connected_ = false;
 
-  // In-memory storage (replace with hiredis client)
-  std::unordered_map<std::string, std::string> store_;
+  // Real Redis connection via hiredis. Owned by this client; nullptr until connect()
+  // succeeds. Access is serialized via mutex_ because hiredis contexts are not
+  // thread-safe.
+  redisContext *context_ = nullptr;
   std::mutex mutex_;
+
+  // In-memory fallback used only when Redis is unreachable (e.g. in unit tests
+  // that haven't started a Redis server). Keeps the public API working so the
+  // rest of the backend doesn't have to special-case "no Redis available".
+  bool fallbackMode_ = false;
+  std::unordered_map<std::string, std::string> fallbackStore_;
 };
 
 } // namespace roaya

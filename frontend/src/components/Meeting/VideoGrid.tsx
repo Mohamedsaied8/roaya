@@ -15,16 +15,74 @@ interface VideoGridProps {
   participants: Participant[];
   localParticipantId: string;
   localName?: string;
+  viewMode?: 'gallery' | 'spotlight';
+  isLocalAudioMuted?: boolean;
+  isLocalVideoMuted?: boolean;
 }
 
-export const VideoGrid: React.FC<VideoGridProps> = ({ participants, localParticipantId, localName = 'You' }) => {
-  const { localStream, remoteStreams } = useMediaStore();
+export const VideoGrid: React.FC<VideoGridProps> = ({
+  participants,
+  localParticipantId,
+  localName = 'You',
+  isLocalAudioMuted = false,
+  isLocalVideoMuted = false
+}) => {
+  const { localStream, remoteStreams, screenStreams } = useMediaStore();
   const activeSpeakerId = useActiveSpeaker(remoteStreams, localStream, localParticipantId);
 
-  // Total tiles = local + remote participants (excluding self from participants list)
   const remoteParticipants = participants.filter(p => p.id !== localParticipantId);
-  const totalCount = 1 + remoteParticipants.length;
 
+  // Find active screen share (first entry — only one allowed at a time)
+  const screenEntry = Array.from(screenStreams.entries())[0];
+  const screenSharerId = screenEntry?.[0];
+  const screenStream = screenEntry?.[1];
+  const screenSharerName = screenSharerId
+    ? (remoteParticipants.find(p => p.id === screenSharerId)?.name ||
+       (screenSharerId === localParticipantId ? localName : 'Participant'))
+    : undefined;
+
+  // When someone is sharing, show presentation layout
+  if (screenStream && screenSharerName) {
+    return (
+      <div className="flex-1 flex p-4 bg-gray-950 min-h-0 gap-3">
+        {/* Main: screen share */}
+        <div className="flex-1 min-w-0">
+          <ParticipantVideo
+            stream={screenStream}
+            participantName={`${screenSharerName}'s screen`}
+            isScreenSharing
+          />
+        </div>
+
+        {/* Side strip: all participant cameras */}
+        <div className="w-48 flex flex-col gap-2 overflow-y-auto">
+          <ParticipantVideo
+            stream={localStream}
+            participantName={localName}
+            isLocal
+            isMuted={isLocalAudioMuted}
+            isVideoMuted={isLocalVideoMuted}
+            isActiveSpeaker={activeSpeakerId === localParticipantId}
+            compact
+          />
+          {remoteParticipants.map(p => (
+            <ParticipantVideo
+              key={p.id}
+              stream={remoteStreams.get(p.id) || null}
+              participantName={p.name}
+              isMuted={p.isMuted}
+              isVideoMuted={p.isVideoMuted}
+              isActiveSpeaker={activeSpeakerId === p.id}
+              compact
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Normal gallery layout (no screen share)
+  const totalCount = 1 + remoteParticipants.length;
   const gridClass =
     totalCount === 1 ? 'grid-cols-1' :
     totalCount === 2 ? 'grid-cols-2' :
@@ -38,15 +96,14 @@ export const VideoGrid: React.FC<VideoGridProps> = ({ participants, localPartici
         className={`flex-1 grid gap-3 ${gridClass}`}
         style={{ gridAutoRows: 'minmax(0, 1fr)' }}
       >
-        {/* Local Participant — always first */}
         <ParticipantVideo
           stream={localStream}
           participantName={localName}
           isLocal={true}
+          isMuted={isLocalAudioMuted}
+          isVideoMuted={isLocalVideoMuted}
           isActiveSpeaker={activeSpeakerId === localParticipantId}
         />
-
-        {/* Remote Participants */}
         {remoteParticipants.map(p => (
           <ParticipantVideo
             key={p.id}

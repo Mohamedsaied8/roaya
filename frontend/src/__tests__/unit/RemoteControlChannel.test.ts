@@ -10,7 +10,7 @@
  * - close() terminates the channel
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { RemoteControlChannel } from '../../services/webrtc/RemoteControlChannel'
 
 function createMockChannel(readyState: RTCDataChannelState = 'open') {
@@ -43,6 +43,19 @@ describe('RemoteControlChannel', () => {
   beforeEach(() => {
     rc = new RemoteControlChannel()
   })
+
+  afterEach(() => {
+    // Close to tear down ping/pong setInterval started on channel open.
+    rc.close()
+  })
+
+  // Helper — find the first frame with kind: 'event' sent via channel.send.
+  const firstEventFrame = (channel: any) => {
+    const call = (channel.send as any).mock.calls.find((c: any[]) => {
+      try { return JSON.parse(c[0]).kind === 'event' } catch { return false }
+    })
+    return call ? JSON.parse(call[0]) : null
+  }
 
   // DC-1: Host should create a named DataChannel
   it('DC-1: openAsHost should create a "remote-control" DataChannel', () => {
@@ -77,17 +90,17 @@ describe('RemoteControlChannel', () => {
     // just check it was accepted (no throws)
   })
 
-  // DC-4: sendEvent should send JSON-serialized data
+  // DC-4: sendEvent should send JSON-serialized data (once control is granted)
   it('DC-4: sendEvent should send JSON through the DataChannel', () => {
     const { pc, channel } = createMockPeerConnection()
     rc.openAsHost(pc)
-    // Simulate channel open
     channel.onopen()
+    rc.grantControl() // A.5: gate must be open before input events flow
 
     rc.sendEvent({ type: 'mousemove', x: 100, y: 200 })
 
-    expect(channel.send).toHaveBeenCalledOnce()
-    const sent = JSON.parse((channel.send as any).mock.calls[0][0])
+    const sent = firstEventFrame(channel)
+    expect(sent).not.toBeNull()
     expect(sent.type).toBe('mousemove')
     expect(sent.x).toBe(100)
     expect(sent.y).toBe(200)
@@ -102,16 +115,17 @@ describe('RemoteControlChannel', () => {
     consoleSpy.mockRestore()
   })
 
-  // DC-6: onEvent handler should receive parsed events
+  // DC-6: onEvent handler should receive parsed events (after grant)
   it('DC-6: onEvent handler should fire with parsed RemoteControlEvent', () => {
     const { pc, channel } = createMockPeerConnection()
     rc.openAsHost(pc)
     channel.onopen()
+    rc.grantControl()
 
     const handler = vi.fn()
     rc.onEvent(handler)
 
-    const event = { type: 'mousedown', x: 50, y: 75, button: 0, timestamp: Date.now() }
+    const event = { kind: 'event', type: 'mousedown', x: 50, y: 75, button: 0, timestamp: Date.now() }
     channel.onmessage({ data: JSON.stringify(event) })
 
     expect(handler).toHaveBeenCalledOnce()
@@ -127,11 +141,12 @@ describe('RemoteControlChannel', () => {
     const { pc, channel } = createMockPeerConnection()
     rc.openAsHost(pc)
     channel.onopen()
+    rc.grantControl()
 
     const handler = vi.fn()
     const unsub = rc.onEvent(handler)
 
-    const event = { type: 'scroll', deltaX: 0, deltaY: -100, timestamp: Date.now() }
+    const event = { kind: 'event', type: 'scroll', deltaX: 0, deltaY: -100, timestamp: Date.now() }
     channel.onmessage({ data: JSON.stringify(event) })
     expect(handler).toHaveBeenCalledOnce()
 
@@ -180,9 +195,48 @@ describe('RemoteControlChannel', () => {
     rc.openAsHost(pc)
     channel.onopen()
 
+    rc.grantControl()
     rc.sendEvent({ type: 'keydown', key: 'ArrowLeft' })
-    const sent = JSON.parse((channel.send as any).mock.calls[0][0])
+    const sent = firstEventFrame(channel)
+    expect(sent).not.toBeNull()
     expect(sent.key).toBe('ArrowLeft')
+  })
+
+  // DC-13: permission gate — events dropped until grantControl()
+  it('DC-13: sendEvent is refused before grantControl', () => {
+    const { pc, channel } = createMockPeerConnection()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    rc.openAsHost(pc)
+    channel.onopen()
+    rc.sendEvent({ type: 'mousemove', x: 1, y: 1 })
+    expect(warnSpy).toHaveBeenCalledWith('RemoteControlChannel: control not granted')
+    expect(firstEventFrame(channel)).toBeNull()
+    warnSpy.mockRestore()
+  })
+
+  // DC-14: incoming events dropped when gate is closed
+  it('DC-14: inbound events are dropped when control is not granted', () => {
+    const { pc, channel } = createMockPeerConnection()
+    rc.openAsHost(pc)
+    channel.onopen()
+    const handler = vi.fn()
+    rc.onEvent(handler)
+    channel.onmessage({
+      data: JSON.stringify({ kind: 'event', type: 'mousemove', x: 1, y: 1, timestamp: 0 }),
+    })
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  // DC-15: ping/pong RTT round-trip
+  it('DC-15: pong response updates lastRtt', () => {
+    const { pc, channel } = createMockPeerConnection()
+    rc.openAsHost(pc)
+    channel.onopen()
+    // Simulate a pong from the other side
+    channel.onmessage({ data: JSON.stringify({ kind: 'pong', id: 1, t: performance.now() - 5 }) })
+    const rtt = rc.getLastRtt()
+    expect(rtt).not.toBeNull()
+    expect(rtt!).toBeGreaterThanOrEqual(0)
   })
 
   // DC-12: invalid JSON should not crash onmessage
